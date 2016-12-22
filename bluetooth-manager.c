@@ -743,5 +743,36 @@ int isHFPConnected(struct btd_device *addr) {
 
 }
 
+GError* setHMIStatus(enum btStates state) {
+
+    gchar *iconString = NULL;
+    GDBusConnection *connection;
+    GVariant *params = NULL;
+    GVariant *message = NULL;
+    GError *error = NULL;
+
+    if (state==INACTIVE) iconString = "qrc:/images/Status/HMI_Status_Bluetooth_Inactive-01.png";
+    else if (state==ACTIVE) iconString = "qrc:/images/Status/HMI_Status_Bluetooth_On-01.png";
+    else iconString = "qrc:/images/Status/HMI_Status_Bluetooth_Inactive-01.png";
+
+    connection = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, &error);
+
+    params = g_variant_new("(is)", HOMESCREEN_BT_ICON_POSITION, iconString);
+
+    message = g_dbus_connection_call_sync(connection, HOMESCREEN_SERVICE,
+    HOMESCREEN_ICON_PATH, HOMESCREEN_ICON_INTERFACE, "setStatusIcon", params,
+            NULL, G_DBUS_CALL_FLAGS_NONE,
+            DBUS_REPLY_TIMEOUT, NULL, &error);
+
+    if (error) {
+        printf("error: %s\n", error->message);
+
+        return error;
+    } else {
+        return NULL;
+    }
+
+}
+
 /************************************** The End Of File **************************************/
 

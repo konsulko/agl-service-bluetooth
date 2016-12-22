@@ -77,6 +77,11 @@
 #define AGENT_CONN                  (cli.agent_conn)
 #define OBEX_CONN                   (cli.obex_conn)
 
+#define HOMESCREEN_SERVICE				"org.agl.homescreen"
+#define HOMESCREEN_ICON_INTERFACE		"org.agl.statusbar"
+#define HOMESCREEN_ICON_PATH			"/StatusBar"
+#define HOMESCREEN_BT_ICON_POSITION		1
+
 #define DBUS_REPLY_TIMEOUT (120 * 1000)
 #define DBUS_REPLY_TIMEOUT_SHORT (10 * 1000)
 
@@ -115,6 +120,9 @@ typedef struct {
     GSList * device;
 } stBluetoothManage;
 
+enum btStates {INACTIVE, ACTIVE};
+
+
 int BluetoothManageInit(void);
 
 int adapter_set_powered(gboolean value);
@@ -135,6 +143,9 @@ int device_set_property(struct btd_device * addr, const char *property, const ch
 
 int isAVPConnected(struct btd_device *BDdevice);
 int isHFPConnected(struct btd_device *BDdevice);
+
+GError* setHMIStatus(enum btStates);
+
 
 #endif /* BLUETOOTH_MANAGER_H */
 
