@@ -14,15 +14,47 @@
 */
 
 
-#ifndef BLUETOOTH_MANAGER_H
-#define BLUETOOTH_MANAGER_H
+#ifndef BLUEZ_MANAGER_H
+#define BLUEZ_MANAGER_H
 
-#include <glib.h>
-#include <glib-object.h>
-//#include <dbus/dbus.h>
 #include <glib.h>
 #include <gio/gio.h>
 #include <glib-object.h>
+
+    /* Debug Trace Level */
+#define DT_LEVEL_ERROR          (1 << 1)
+#define DT_LEVEL_WARNING        (1 << 2)
+#define DT_LEVEL_NOTICE         (1 << 3)
+#define DT_LEVEL_INFO           (1 << 4)
+#define DT_LEVEL_DEBUG          (1 << 5)
+//#define _DEBUG 
+
+#define LOGE(fmt, args...)   \
+    DebugTraceSendMsg(DT_LEVEL_ERROR, g_strdup_printf("[%d:%s]" fmt, __LINE__, __FUNCTION__, ## args))
+#define LOGW(fmt, args...)   \
+    DebugTraceSendMsg(DT_LEVEL_WARNING, g_strdup_printf("[%d:%s]" fmt, __LINE__, __FUNCTION__, ## args))
+#define LOGN(fmt, args...)   \
+    DebugTraceSendMsg(DT_LEVEL_NOTICE,  g_strdup_printf("[%d:%s]" fmt, __LINE__, __FUNCTION__, ## args))
+#define LOGI(fmt, args...)   \
+    DebugTraceSendMsg(DT_LEVEL_INFO, g_strdup_printf("[%d:%s]" fmt, __LINE__, __FUNCTION__, ## args))
+#define LOGD(fmt, args...)   \
+    DebugTraceSendMsg(DT_LEVEL_DEBUG,  g_strdup_printf("[%d:%s]" fmt, __LINE__, __FUNCTION__, ## args))
+
+#ifdef _DEBUG
+ #define _DEBUG_PRINT_DBUS
+ #define LOCAL_PRINT_DEBUG
+#endif
+
+#ifdef LOCAL_PRINT_DEBUG
+#define D_PRINTF(fmt, args...) \
+	g_print("[DEBUG][%d:%s]"fmt,  __LINE__, __FUNCTION__, ## args)
+#define D_PRINTF_RAW(fmt, args...) \
+	g_print(""fmt, ## args)
+#else
+#define D_PRINTF(fmt, args...)
+#define D_PRINTF_RAW(fmt, args...)
+#endif	/* ifdef _DEBUG */
+
 //service
 #define AGENT_SERVICE               "org.agent"
 
@@ -33,18 +65,20 @@
 
 //object path
 #define OFONO_MANAGER_PATH          "/"
+#define BLUEZ_MANAGER_PATH          "/"
+#define AGENT_PATH                  "/org/bluez"
 #define ADAPTER_PATH                "/org/bluez/hci0"
 #define OBEX_CLIENT_PATH            "/org/bluez/obex"
-#define AGENT_PATH                  "/org/bluez"
+
 
 //interface
 #define ADAPTER_INTERFACE           "org.bluez.Adapter1"
 #define DEVICE_INTERFACE            "org.bluez.Device1"
-#define AGENT_MANAGER_INTERFACE     "org.bluez.AgentManager"
-#define SERVICE_INTERFACE           "org.bluez.Service"
+#define AGENT_MANAGER_INTERFACE     "org.bluez.AgentManager1"
+//#define SERVICE_INTERFACE           "org.bluez.Service"
 #define AGENT_INTERFACE             "org.bluez.Agent"
 
-#define CLIENT_INTERFACE            "org.bluez.obex.Client"
+#define CLIENT_INTERFACE            "org.bluez.obex.Client1"
 #define TRANSFER_INTERFACE          "org.bluez.obex.Transfer"
 #define SESSION_INTERFACE           "org.bluez.obex.Session"
 #define OBEX_ERROR_INTERFACE        "org.bluez.obex.Error"
@@ -57,7 +91,7 @@
 #define MEDIA_FOLDER_INTERFACE      "org.bluez.MediaFolder"
 #define MEDIA_ITEM_INTERFACE        "org.bluez.MediaItem"
 #define MEDIA_TRANSPORT_INTERFACE   "org.bluez.MediaTransport"
-#define MEDIA_CONTROL1_INTERFACE   "org.bluez.MediaControl1"
+#define MEDIA_CONTROL1_INTERFACE    "org.bluez.MediaControl1"
 
 
 #define OFONO_HANDSFREE_INTERFACE               "org.ofono.Handsfree"
@@ -71,11 +105,7 @@
 
 #define FREEDESKTOP_INTROSPECT      "org.freedesktop.DBus.Introspectable"
 #define FREEDESKTOP_PROPERTIES      "org.freedesktop.DBus.Properties"
-
-
-#define CONVERTER_CONN              (cli.sys_conn)
-#define AGENT_CONN                  (cli.agent_conn)
-#define OBEX_CONN                   (cli.obex_conn)
+#define FREEDESKTOP_OBJECTMANAGER   "org.freedesktop.DBus.ObjectManager"
 
 #define HOMESCREEN_SERVICE				"org.agl.homescreen"
 #define HOMESCREEN_ICON_INTERFACE		"org.agl.statusbar"
@@ -85,33 +115,29 @@
 #define DBUS_REPLY_TIMEOUT (120 * 1000)
 #define DBUS_REPLY_TIMEOUT_SHORT (10 * 1000)
 
-//typedef void(*callback)(void);
-typedef void(*callback)(int password_rejected_flag);
-void register_callback(callback ptr);
-
+#define ERROR_BLUEZ_REJECT "org.bluez.Error.Rejected"
+#define ERROR_BLUEZ_CANCELED "org.bluez.Error.Canceled"
+#if 0
+void DebugTraceSendMsg(int level, gchar* message);
+#else
 
 typedef struct _client
 {
-    GDBusConnection *sys_conn;
-    GDBusConnection *agent_conn;
-    GDBusConnection *obex_conn;
+    GDBusConnection *system_conn;
+    GDBusConnection *session_conn;
     GMainLoop *clientloop;
-//    FILE *fd;
-//    int conn_fd;
 } Client;
 
 //Bluetooth Device Properties
 struct btd_device {
-    gchar   *bdaddr;
     gchar   *path;
+    gchar   *bdaddr;
     gchar   *name;
     gboolean    paired;
     gboolean    trusted;
-    gboolean    blocked;
     gboolean    connected;
     gboolean    avconnected;
     gboolean    hfpconnected;
-    GSList        *uuids;
 };
 
 typedef struct {
@@ -120,35 +146,47 @@ typedef struct {
     GSList * device;
 } stBluetoothManage;
 
+typedef struct tagBinding_RegisterCallback
+{
+    void (*binding_device_added)(struct btd_device *BDdevice);
+    void (*binding_device_removed)(struct btd_device *BDdevice);
+    void (*binding_device_propertyies_changed)(struct btd_device *BDdevice);
+    gboolean (*binding_request_confirmation)(const gchar *device, guint passkey);
+}Binding_RegisterCallback_t;
+
 enum btStates {INACTIVE, ACTIVE};
 
+void DebugTraceSendMsg(int level, gchar* message);
 
-int BluetoothManageInit(void);
+/* ------ PUBLIC PLUGIN FUNCTIONS --------- */
+void BindingAPIRegister(const Binding_RegisterCallback_t* pstRegisterCallback);
+int BluetoothManagerInit(void);
+int BluetoothManagerQuit(void);
+
+GSList* adapter_get_devices_list() ;
+void adapter_devices_list_free(GSList* list) ;
 
 int adapter_set_powered(gboolean value);
 int adapter_get_powered(gboolean *value);
-int adapter_set_discoverable(gboolean value);
+//int adapter_set_discoverable(gboolean value);
 int adapter_start_discovery();
 int adapter_stop_discovery();
-int adapter_update_devices();
-GSList* adapter_get_devices_list();
-int adapter_remove_device(struct btd_device * addr);
-int device_pair(struct btd_device * addr);
-int device_cancelPairing(struct btd_device * addr);
-int device_connect(struct btd_device * addr);
+int adapter_remove_device(const gchar *addr);
+int device_pair(const gchar * addr);
+int device_cancelPairing(const gchar * bdaddr);
+int device_connect(const gchar *addr);
 //int device_connectProfile();
-int device_disconnect(struct btd_device * addr);
+int device_disconnect(const gchar *addr);
 //int device_disconnectProfile();
-int device_set_property(struct btd_device * addr, const char *property, const char *value);
+int device_set_property(const gchar * bdaddr, const gchar *property, const gchar *value);
 
-int isAVPConnected(struct btd_device *BDdevice);
-int isHFPConnected(struct btd_device *BDdevice);
+int adapter_set_property(const gchar* property, gboolean value) ;
 
 GError* setHMIStatus(enum btStates);
 
-
+#endif
 #endif /* BLUETOOTH_MANAGER_H */
 
 
-/************************************** The End Of File **************************************/  
+/****************************** The End Of File ******************************/
 

@@ -18,33 +18,35 @@
 #define BLUETOOTH_API_H
 
 
+#define LEFT_SHIFT(shift)    (0x00000001ul << (shift) )
 
-
-//#define _DEBUG
-#ifdef _DEBUG
-#define D_PRINTF(fmt, args...) \
-	printf("[DEBUG][%s:%d:%s]"fmt, __FILE__, __LINE__, __FUNCTION__, ## args)
-#define D_PRINTF_RAW(fmt, args...) \
-	printf(""fmt, ## args)
-#else	/* ifdef _DEBUG */
-#define D_PRINTF(fmt, args...)
-#define D_PRINTF_RAW(fmt, args...)
-#endif	/* ifdef _DEBUG */
-#define E_PRINTF(fmt, args...) \
-	printf("[ERROR][%s:%d:%s]"fmt, __FILE__, __LINE__, __FUNCTION__, ## args)
+#define BD_NONE 0x00000000
+#define BD_PATH LEFT_SHIFT(0)
+#define BD_ADDER LEFT_SHIFT(1)
+#define BD_NAME LEFT_SHIFT(2)
+#define BD_ALIAS LEFT_SHIFT(3)
+#define BD_PAIRED LEFT_SHIFT(4)
+#define BD_TRUSTED LEFT_SHIFT(5)
+#define BD_BLOCKED LEFT_SHIFT(6)
+#define BD_ACLCONNECTED LEFT_SHIFT(7)
+#define BD_AVCONNECTED LEFT_SHIFT(8)
+#define BD_HFPCONNECTED LEFT_SHIFT(9)
+#define BD_LEGACYPAIRING LEFT_SHIFT(10)
+#define BD_RSSI LEFT_SHIFT(11)
 
 
 /* -------------- PLUGIN DEFINITIONS ----------------- */
 
 typedef struct {
   void *bt_server;          /* handle to implementation  */
-  unsigned int index;          /* currently selected media file       */
+  unsigned int index;       /* currently selected media file       */
 } BtCtxHandleT;
+
 
 #endif /* BLUETOOTH_API_H */
 
 
 
-/************************************** The End Of File **************************************/  
+/****************************** The End Of File ******************************/
 
 
