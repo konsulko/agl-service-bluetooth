@@ -657,8 +657,8 @@ on_interface_proxy_properties_changed (GDBusObjectManagerClient *manager,
     if( (0 == g_strcmp0(pInterface, DEVICE_INTERFACE)) ||
         (0 == g_strcmp0(pInterface, MEDIA_CONTROL1_INTERFACE))) {
 
-        if (bluez_RegisterCallback.device_propertyies_changed)
-            bluez_RegisterCallback.device_propertyies_changed(pObjecPath,
+        if (bluez_RegisterCallback.device_properties_changed)
+            bluez_RegisterCallback.device_properties_changed(pObjecPath,
                                             pInterface, changed_properties);
 
     }
@@ -944,10 +944,10 @@ void BluezDeviceAPIRegister(const Bluez_RegisterCallback_t* pstRegisterCallback)
                 pstRegisterCallback->device_removed;
         }
 
-        if (NULL != pstRegisterCallback->device_propertyies_changed)
+        if (NULL != pstRegisterCallback->device_properties_changed)
         {
-            bluez_RegisterCallback.device_propertyies_changed =
-                pstRegisterCallback->device_propertyies_changed;
+            bluez_RegisterCallback.device_properties_changed =
+                pstRegisterCallback->device_properties_changed;
         }
     }
 }

@@ -55,7 +55,7 @@ typedef struct tagOfono_RegisterCallback
 {
     void (*modem_added)(struct ofono_modem *modem);
     void (*modem_removed)(struct ofono_modem *modem);
-    void (*modem_propertyies_changed)(struct ofono_modem *modem);
+    void (*modem_properties_changed)(struct ofono_modem *modem);
 }Ofono_RegisterCallback_t;
 
 /* --- PUBLIC FUNCTIONS --- */

@@ -202,9 +202,9 @@ static void on_modem_property_changed (OFONOMODEMOrgOfonoModem* object,
         //old_value = modem->powered;
         modem->powered = new_value;
 
-        if (NULL != ofono_RegisterCallback.modem_propertyies_changed)
+        if (NULL != ofono_RegisterCallback.modem_properties_changed)
         {
-            ofono_RegisterCallback.modem_propertyies_changed(modem);
+            ofono_RegisterCallback.modem_properties_changed(modem);
         }
     }
 
@@ -660,10 +660,10 @@ void OfonoModemAPIRegister(const Ofono_RegisterCallback_t* pstRegisterCallback)
                 pstRegisterCallback->modem_removed;
         }
 
-        if (NULL != pstRegisterCallback->modem_propertyies_changed)
+        if (NULL != pstRegisterCallback->modem_properties_changed)
         {
-            ofono_RegisterCallback.modem_propertyies_changed =
-                pstRegisterCallback->modem_propertyies_changed;
+            ofono_RegisterCallback.modem_properties_changed =
+                pstRegisterCallback->modem_properties_changed;
         }
 
     }

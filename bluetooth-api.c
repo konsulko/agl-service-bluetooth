@@ -766,7 +766,7 @@ const struct afb_binding *afbBindingV1Register (const struct afb_binding_interfa
     Binding_RegisterCallback_t API_Callback;
     API_Callback.binding_device_added = bt_broadcast_device_added;
     API_Callback.binding_device_removed = bt_broadcast_device_removed;
-    API_Callback.binding_device_propertyies_changed = bt_broadcast_device_properties_change;
+    API_Callback.binding_device_properties_changed = bt_broadcast_device_properties_change;
     API_Callback.binding_request_confirmation = bt_request_confirmation;
     BindingAPIRegister(&API_Callback);
 

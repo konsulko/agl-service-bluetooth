@@ -57,7 +57,7 @@ typedef struct tagBluez_RegisterCallback
 {
     void (*device_added)(struct bt_device *device);
     void (*device_removed)(const gchar *path);
-    void (*device_propertyies_changed)(const gchar *pObjecPath, const gchar *pInterface, GVariant *value);
+    void (*device_properties_changed)(const gchar *pObjecPath, const gchar *pInterface, GVariant *value);
 }Bluez_RegisterCallback_t;
 
 /* --- PUBLIC FUNCTIONS --- */

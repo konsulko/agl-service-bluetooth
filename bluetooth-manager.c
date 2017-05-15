@@ -558,8 +558,8 @@ bluez_device_properties_changed_cb (const gchar *pObjecPath,
 
     }
 
-    if (g_RegisterCallback.binding_device_propertyies_changed)
-        g_RegisterCallback.binding_device_propertyies_changed(device);
+    if (g_RegisterCallback.binding_device_properties_changed)
+        g_RegisterCallback.binding_device_properties_changed(device);
 
     devices_list_unlock();
 
@@ -586,10 +586,10 @@ void ofono_modem_added_cb(struct ofono_modem *modem)
 
         device->hfpconnected = modem->powered;
 
-        if ((NULL != g_RegisterCallback.binding_device_propertyies_changed)
+        if ((NULL != g_RegisterCallback.binding_device_properties_changed)
             && (old_value != device->hfpconnected))
         {
-            g_RegisterCallback.binding_device_propertyies_changed(device);
+            g_RegisterCallback.binding_device_properties_changed(device);
         }
     }
     devices_list_unlock();
@@ -615,10 +615,10 @@ void ofono_modem_removed_cb(struct ofono_modem *modem)
 
         device->hfpconnected = FALSE;
 
-        if ((NULL != g_RegisterCallback.binding_device_propertyies_changed)
+        if ((NULL != g_RegisterCallback.binding_device_properties_changed)
             && (old_value != device->hfpconnected))
         {
-            g_RegisterCallback.binding_device_propertyies_changed(device);
+            g_RegisterCallback.binding_device_properties_changed(device);
         }
     }
     devices_list_unlock();
@@ -643,10 +643,10 @@ void ofono_modem_properties_change_cb(struct ofono_modem *modem)
 
         device->hfpconnected = modem->powered;
 
-        if ((NULL != g_RegisterCallback.binding_device_propertyies_changed)
+        if ((NULL != g_RegisterCallback.binding_device_properties_changed)
             && (old_value != device->hfpconnected))
         {
-            g_RegisterCallback.binding_device_propertyies_changed(device);
+            g_RegisterCallback.binding_device_properties_changed(device);
         }
     }
     devices_list_unlock();
@@ -720,13 +720,13 @@ static int bt_manager_app_init(void)
     Bluez_RegisterCallback_t Bluez_API_Callback;
     Bluez_API_Callback.device_added = bluez_device_added_cb;
     Bluez_API_Callback.device_removed = bluez_device_removed_cb;
-    Bluez_API_Callback.device_propertyies_changed = bluez_device_properties_changed_cb;
+    Bluez_API_Callback.device_properties_changed = bluez_device_properties_changed_cb;
     BluezDeviceAPIRegister(&Bluez_API_Callback);
 
     Ofono_RegisterCallback_t Ofono_API_Callback;
     Ofono_API_Callback.modem_added = ofono_modem_added_cb;
     Ofono_API_Callback.modem_removed = ofono_modem_removed_cb;
-    Ofono_API_Callback.modem_propertyies_changed = ofono_modem_properties_change_cb;
+    Ofono_API_Callback.modem_properties_changed = ofono_modem_properties_change_cb;
     OfonoModemAPIRegister(&Ofono_API_Callback);
 
 
@@ -1505,10 +1505,10 @@ void BindingAPIRegister(const Binding_RegisterCallback_t* pstRegisterCallback)
                 pstRegisterCallback->binding_device_removed;
         }
 
-        if (NULL != pstRegisterCallback->binding_device_propertyies_changed)
+        if (NULL != pstRegisterCallback->binding_device_properties_changed)
         {
-            g_RegisterCallback.binding_device_propertyies_changed =
-                pstRegisterCallback->binding_device_propertyies_changed;
+            g_RegisterCallback.binding_device_properties_changed =
+                pstRegisterCallback->binding_device_properties_changed;
         }
 
         if (NULL != pstRegisterCallback->binding_request_confirmation)

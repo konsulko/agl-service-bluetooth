@@ -150,7 +150,7 @@ typedef struct tagBinding_RegisterCallback
 {
     void (*binding_device_added)(struct btd_device *BDdevice);
     void (*binding_device_removed)(struct btd_device *BDdevice);
-    void (*binding_device_propertyies_changed)(struct btd_device *BDdevice);
+    void (*binding_device_properties_changed)(struct btd_device *BDdevice);
     gboolean (*binding_request_confirmation)(const gchar *device, guint passkey);
 }Binding_RegisterCallback_t;
 
