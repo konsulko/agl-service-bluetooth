@@ -594,6 +594,11 @@ static void on_object_removed (GDBusObjectManager *manager,
 
     dbusObjecPath = g_dbus_object_get_object_path (object);
 
+    if ((37 != strlen(dbusObjecPath))
+        || (NULL == g_strrstr_len(dbusObjecPath, 19,ADAPTER_PATH"/dev"))) {
+        return;
+    }
+
     if (NULL != bluez_RegisterCallback.device_removed)
     {
         bluez_RegisterCallback.device_removed(dbusObjecPath);
@@ -646,16 +651,12 @@ on_interface_proxy_properties_changed (GDBusObjectManagerClient *manager,
 #endif
 
     //ObjectPath is /org/bluez/hci0/dev_xx_xx_xx_xx_xx_xx
-    if ((37 != strlen(pObjecPath))
-        || (NULL == g_strrstr_len(pObjecPath, 19,
-                                  ADAPTER_PATH"/dev"))) {
-        return;
-    }
 
     LOGD("%s\n",pObjecPath);
 
     if( (0 == g_strcmp0(pInterface, DEVICE_INTERFACE)) ||
-        (0 == g_strcmp0(pInterface, MEDIA_CONTROL1_INTERFACE))) {
+        (0 == g_strcmp0(pInterface, MEDIA_CONTROL1_INTERFACE)) ||
+        (0 == g_strcmp0(pInterface, MEDIA_PLAYER1_INTERFACE))) {
 
         if (bluez_RegisterCallback.device_properties_changed)
             bluez_RegisterCallback.device_properties_changed(pObjecPath,

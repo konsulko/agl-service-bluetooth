@@ -115,6 +115,65 @@ static int event_push(struct json_object *args, const char *tag)
 	return e ? afb_event_push(e->event, json_object_get(args)) : -1;
 }
 
+static json_object *new_json_object_parse_avrcp(struct btd_device *BDdevice, unsigned int filter)
+{
+    json_object *jresp = json_object_new_object();
+    json_object *jstring = NULL;
+
+    if (BD_AVRCP_TITLE & filter)
+    {
+        if (BDdevice->avrcp_title)
+        {
+            jstring = json_object_new_string(BDdevice->avrcp_title);
+        }
+        else
+        {
+            jstring = json_object_new_string("");
+        }
+        json_object_object_add(jresp, "Title", jstring);
+    }
+
+    if (BD_AVRCP_ARTIST & filter)
+    {
+        if (BDdevice->avrcp_artist)
+        {
+            jstring = json_object_new_string(BDdevice->avrcp_artist);
+        }
+        else
+        {
+            jstring = json_object_new_string("");
+        }
+        json_object_object_add(jresp, "Artist", jstring);
+    }
+
+    if (BD_AVRCP_STATUS & filter)
+    {
+        if (BDdevice->avrcp_status)
+        {
+            jstring = json_object_new_string(BDdevice->avrcp_status);
+        }
+        else
+        {
+            jstring = json_object_new_string("");
+        }
+        json_object_object_add(jresp, "Status", jstring);
+    }
+
+    if (BD_AVRCP_DURATION & filter)
+    {
+        json_object_object_add(jresp, "Duration",
+                               json_object_new_int(BDdevice->avrcp_duration));
+    }
+
+    if (BD_AVRCP_POSITION & filter)
+    {
+        json_object_object_add(jresp, "Position",
+                               json_object_new_int(BDdevice->avrcp_position));
+    }
+
+    return jresp;
+}
+
 /* create device json object*/
 static json_object *new_json_object_from_device(struct btd_device *BDdevice, unsigned int filter)
 {
@@ -186,6 +245,12 @@ static json_object *new_json_object_from_device(struct btd_device *BDdevice, uns
         jstring = (TRUE == BDdevice->avconnected) ?
             json_object_new_string("True"):json_object_new_string("False");
         json_object_object_add(jresp, "AVPConnected", jstring);
+
+        if (BDdevice->avconnected)
+        {
+            jstring = new_json_object_parse_avrcp(BDdevice, filter);
+            json_object_object_add(jresp, "Metadata", jstring);
+        }
     }
 
     if (BD_HFPCONNECTED & filter)
@@ -638,7 +703,7 @@ void bt_broadcast_device_removed(struct btd_device *BDdevice)
 void bt_broadcast_device_properties_change(struct btd_device *BDdevice)
 {
 
-    unsigned int filter = BD_ADDER|BD_NAME|BD_PAIRED|BD_ACLCONNECTED|BD_AVCONNECTED|BD_HFPCONNECTED;
+    unsigned int filter = BD_ADDER|BD_NAME|BD_PAIRED|BD_ACLCONNECTED|BD_AVCONNECTED|BD_HFPCONNECTED|BD_AVRCP_TITLE|BD_AVRCP_ARTIST|BD_AVRCP_STATUS|BD_AVRCP_DURATION|BD_AVRCP_POSITION;
     int ret;
     json_object *jresp = new_json_object_from_device(BDdevice, filter);
 

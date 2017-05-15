@@ -88,6 +88,7 @@
 #define MAP_MSG_INTERFACE           "org.bluez.obex.Message"
 
 #define MEDIA_PLAYER_INTERFACE      "org.bluez.MediaPlayer"
+#define MEDIA_PLAYER1_INTERFACE     "org.bluez.MediaPlayer1"
 #define MEDIA_FOLDER_INTERFACE      "org.bluez.MediaFolder"
 #define MEDIA_ITEM_INTERFACE        "org.bluez.MediaItem"
 #define MEDIA_TRANSPORT_INTERFACE   "org.bluez.MediaTransport"
@@ -133,6 +134,11 @@ struct btd_device {
     gchar   *path;
     gchar   *bdaddr;
     gchar   *name;
+    gchar   *avrcp_title;
+    gchar   *avrcp_artist;
+    gchar   *avrcp_status;
+    guint32 avrcp_duration;
+    guint32 avrcp_position;
     gboolean    paired;
     gboolean    trusted;
     gboolean    connected;

@@ -58,7 +58,7 @@ void devices_list_unlock(void)
 
 static int device_path_cmp(struct btd_device * device, const gchar* pPath )
 {
-    return g_strcmp0 (device->path, pPath);
+    return !g_str_has_prefix (pPath, device->path);
 }
 
 /*
@@ -255,7 +255,112 @@ static int device_update_from_MediaControl1(struct btd_device *device,
     return 0;
 }
 
+static int device_update_from_Track(struct btd_device *device,
+                                                     GVariant *value)
+{
+    GVariantIter iter;
+    const gchar *key;
+    GVariant *subValue;
 
+    if ((NULL==device) || (NULL==value))
+    {
+        return -1;
+    }
+
+    g_variant_iter_init (&iter, value);
+    while (g_variant_iter_next (&iter, "{&sv}", &key, &subValue))
+    {
+        //gchar *s = g_variant_print (subValue, TRUE);
+        //g_print ("  %s -> %s\n", key, s);
+        //g_free (s);
+
+        gboolean value_b  =  FALSE;//b gboolean
+        //gchar value_c = 0;
+        //guchar value_y  =  0;//y guchar
+        //gint16 value_n  =  0;//n gint16
+        //guint16 value_q  =  0;//q guint16
+        //gint32 value_i  =  0;//i gint32
+        guint32 value_u  =  0;//u guint32
+        //gint64 value_x  =  0;//x gint64
+        //guint64 value_t  =  0;//t guint64
+        //gint32 value_h  = 0;//h gint32
+        //gdouble value_d = 0.0;//d gdouble
+        gchar *str;//d gdouble
+
+        if (0==g_strcmp0(key,"Title")) {
+            g_variant_get(subValue, "s", &str);
+            D_PRINTF("Title %s\n", str);
+            if (device->avrcp_title)
+                free(device->avrcp_title);
+            device->avrcp_title = g_strdup(str);
+        } else if (0==g_strcmp0(key,"Artist")) {
+            g_variant_get(subValue, "s", &str);
+            D_PRINTF("Artist %s\n", str);
+            if (device->avrcp_artist)
+                free(device->avrcp_artist);
+            device->avrcp_artist = g_strdup(str);
+        } else if (0==g_strcmp0(key,"Duration")) {
+            g_variant_get(subValue, "u", &value_u);
+            D_PRINTF("Duration %u\n", value_u);
+            device->avrcp_duration = value_u;
+        }
+    }
+
+    return 0;
+}
+
+/*
+ * update device from Interface org.bluez.MediaPlayer1 properties
+ */
+static int device_update_from_MediaPlayer1(struct btd_device *device,
+                                                     GVariant *value)
+{
+    GVariantIter iter;
+    const gchar *key;
+    GVariant *subValue;
+
+    if ((NULL==device) || (NULL==value))
+    {
+        return -1;
+    }
+
+    g_variant_iter_init (&iter, value);
+    while (g_variant_iter_next (&iter, "{&sv}", &key, &subValue))
+    {
+        //gchar *s = g_variant_print (subValue, TRUE);
+        //g_print ("  %s -> %s\n", key, s);
+        //g_free (s);
+
+        gboolean value_b  =  FALSE;//b gboolean
+        //gchar value_c = 0;
+        //guchar value_y  =  0;//y guchar
+        //gint16 value_n  =  0;//n gint16
+        //guint16 value_q  =  0;//q guint16
+        //gint32 value_i  =  0;//i gint32
+        guint32 value_u  =  0;//u guint32
+        //gint64 value_x  =  0;//x gint64
+        //guint64 value_t  =  0;//t guint64
+        //gint32 value_h  = 0;//h gint32
+        //gdouble value_d = 0.0;//d gdouble
+        gchar *str;//d gdouble
+
+        if (0==g_strcmp0(key,"Status")) {
+            g_variant_get(subValue, "s", &str);
+            D_PRINTF("Status %s\n", str);
+            if (device->avrcp_status)
+                free(device->avrcp_status);
+            device->avrcp_status = g_strdup(str);
+        } else if (0==g_strcmp0(key,"Position")) {
+            g_variant_get(subValue, "u", &value_u);
+            D_PRINTF("Position %d\n", value_u);
+            device->avrcp_position = value_u;
+        } else if (0==g_strcmp0(key,"Track")) {
+            device_update_from_Track(device, subValue);
+        }
+    }
+
+    return 0;
+}
 
 /*
  * update device from Interfcace org.bluez.Device1 properties
@@ -555,6 +660,10 @@ bluez_device_properties_changed_cb (const gchar *pObjecPath,
     } else if (0 == g_strcmp0(pInterface, MEDIA_CONTROL1_INTERFACE)) {
 
         device_update_from_MediaControl1(device, properties);
+
+    } else if (0 == g_strcmp0(pInterface, MEDIA_PLAYER1_INTERFACE)) {
+
+        device_update_from_MediaPlayer1(device, properties);
 
     }
 
