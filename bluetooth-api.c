@@ -603,6 +603,54 @@ static void bt_set_property (struct afb_req request)
 
 }
 
+/**/
+static void bt_set_avrcp_controls (struct afb_req request)
+{
+    LOGD("\n");
+
+    const char *address = afb_req_value (request, "Address");
+    const char *value = afb_req_value (request, "value");
+    int ret = 0;
+    GSList *list = NULL;
+
+    if (NULL==value)
+    {
+        afb_req_fail (request, "failed", "Please Check Input Parameter");
+        return;
+    }
+
+    if (NULL == address)
+    {
+        list = adapter_get_devices_list();
+        if (NULL == list)
+        {
+            afb_req_fail (request, "failed", "No find devices");
+            return;
+        }
+
+        for (;list;list=list->next)
+        {
+            struct btd_device *BDdevice = list->data;
+            //LOGD("\n%s\t%s\n",BDdevice->bdaddr,BDdevice->name);
+            if (BDdevice->avconnected)
+            {
+                address = BDdevice->bdaddr;
+                break;
+            }
+        }
+    }
+
+    ret = device_call_avrcp_method(address, value);
+    if (0 == ret)
+    {
+        afb_req_success (request, NULL, NULL);
+    }
+    else
+    {
+        afb_req_fail (request, "failed", "Bluetooth set avrcp control failed");
+    }
+}
+
 static void eventadd (struct afb_req request)
 {
 	const char *tag = afb_req_value(request, "tag");
@@ -792,6 +840,7 @@ static const struct afb_verb_desc_v1 binding_verbs[]= {
 { .name = "disconnect",          .session = AFB_SESSION_NONE,      .callback = bt_disconnect,          .info = "Disconnect special device" },
 { .name = "set_device_property", .session = AFB_SESSION_NONE,      .callback = bt_set_device_property, .info = "Set special device property" },
 { .name = "set_property",        .session = AFB_SESSION_NONE,      .callback = bt_set_property,        .info = "Set Bluetooth property" },
+{ .name = "set_avrcp_controls",  .session = AFB_SESSION_NONE,      .callback = bt_set_avrcp_controls,  .info = "Set Bluetooth AVRCP controls" },
 { .name = "send_confirmation",   .session = AFB_SESSION_NONE,      .callback = bt_send_confirmation,   .info = "Send Confirmation" },
 { .name = "eventadd",            .session = AFB_SESSION_NONE,      .callback = eventadd,               .info = "adds the event of 'name' for the 'tag'"},
 { .name = "eventdel",            .session = AFB_SESSION_NONE,      .callback = eventdel,               .info = "deletes the event of 'tag'"},

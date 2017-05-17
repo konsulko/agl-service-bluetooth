@@ -1519,6 +1519,65 @@ int device_set_property(const char * bdaddr, const char *property_name,
     return 0;
 }
 
+/*
+ * call remote device avrcp method
+ * Only support controls (Play, Pause, Stop, Previous, Next)
+ * If success return 0, else return -1;
+ */
+int device_call_avrcp_method(const gchar* bdaddr, const gchar* method)
+{
+    LOGD("device:%s,value:%d\n", bdaddr, method);
+
+    struct btd_device * device;
+    GError *error = NULL;
+    GVariant *value;
+    gchar *path;
+
+    if (FALSE == BluetoothManage_InitFlag_Get()) {
+        LOGW("BluetoothManage Not Init\n");
+        return -1;
+    }
+
+    if ((0!=g_strcmp0 (method, "Play"))&&
+        (0!=g_strcmp0 (method, "Pause"))&&
+        (0!=g_strcmp0 (method, "Stop"))&&
+        (0!=g_strcmp0 (method, "Previous"))&&
+        (0!=g_strcmp0 (method, "Next")))
+    {
+        LOGD("Invalid method\n");
+        return -1;
+    }
+
+    devices_list_lock();
+    device = devices_list_find_device_by_bdaddr(bdaddr);
+
+    if (NULL == device) {
+        devices_list_unlock();
+        LOGD("not find device\n");
+        return -1;
+    }
+    path = g_strdup(device->path);
+    devices_list_unlock();
+
+    value = g_dbus_connection_call_sync(cli.system_conn, BLUEZ_SERVICE,
+                    path,    MEDIA_CONTROL1_INTERFACE,
+                    method,   NULL,  NULL,
+                    G_DBUS_CALL_FLAGS_NONE, DBUS_REPLY_TIMEOUT,
+                    NULL, &error);
+
+    g_free(path);
+
+    if (NULL == value) {
+        LOGW ("Error : %s", error->message);
+        g_error_free(error);
+        return -1;
+    }
+
+    g_variant_unref(value);
+
+    return 0;
+}
+
 
 /*
  * Stops the GMainLoop

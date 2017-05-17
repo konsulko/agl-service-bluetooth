@@ -185,6 +185,7 @@ int device_connect(const gchar *addr);
 int device_disconnect(const gchar *addr);
 //int device_disconnectProfile();
 int device_set_property(const gchar * bdaddr, const gchar *property, const gchar *value);
+int device_call_avrcp_method(const gchar* device, const gchar* method);
 
 int adapter_set_property(const gchar* property, gboolean value) ;
 
