@@ -157,6 +157,24 @@ void device_free(struct btd_device* device)
         device->name = NULL;
     }
 
+    if (device->avrcp_title) {
+        D_PRINTF("avrcp_title:%s\n",device->avrcp_title);
+        g_free(device->avrcp_title);
+        device->avrcp_title = NULL;
+    }
+
+    if (device->avrcp_artist) {
+        D_PRINTF("avrcp_artist:%s\n",device->avrcp_artist);
+        g_free(device->avrcp_artist);
+        device->avrcp_artist = NULL;
+    }
+
+    if (device->avrcp_status) {
+        D_PRINTF("avrcp_status:%s\n",device->avrcp_status);
+        g_free(device->avrcp_status);
+        device->avrcp_status = NULL;
+    }
+
     g_free(device);
 }
 
