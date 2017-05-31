@@ -175,6 +175,12 @@ void device_free(struct btd_device* device)
         device->avrcp_status = NULL;
     }
 
+    if (device->transport_state) {
+        D_PRINTF("transport_state:%s\n",device->transport_state);
+        g_free(device->transport_state);
+        device->transport_state = NULL;
+    }
+
     g_free(device);
 }
 
@@ -272,6 +278,58 @@ static int device_update_from_MediaControl1(struct btd_device *device,
 
     return 0;
 }
+
+/*
+ * update device from Interface org.bluez.MediaTransport1 properties
+ */
+static int device_update_from_MediaTransport1(struct btd_device *device,
+                                                     GVariant *value)
+{
+    GVariantIter iter;
+    const gchar *key;
+    GVariant *subValue;
+
+    if ((NULL==device) || (NULL==value))
+    {
+        return -1;
+    }
+
+    g_variant_iter_init (&iter, value);
+    while (g_variant_iter_next (&iter, "{&sv}", &key, &subValue))
+    {
+        //gchar *s = g_variant_print (subValue, TRUE);
+        //g_print ("  %s -> %s\n", key, s);
+        //g_free (s);
+
+        //gboolean value_b  =  FALSE;//b gboolean
+        //gchar value_c = 0;
+        //guchar value_y  =  0;//y guchar
+        //gint16 value_n  =  0;//n gint16
+        guint16 value_q  =  0;//q guint16
+        //gint32 value_i  =  0;//i gint32
+        //guint32 value_u  =  0;//u guint32
+        //gint64 value_x  =  0;//x gint64
+        //guint64 value_t  =  0;//t guint64
+        //gint32 value_h  = 0;//h gint32
+        //gdouble value_d = 0.0;//d gdouble
+        gchar *str;//d gdouble
+
+        if (0==g_strcmp0(key,"State")) {
+            g_variant_get(subValue, "s", &str);
+            D_PRINTF("State %s\n", str);
+            if (device->transport_state)
+                free(device->transport_state);
+            device->transport_state = g_strdup(str);
+        } else if (0==g_strcmp0(key,"Volume")) {
+            g_variant_get(subValue, "q", &value_q);
+            D_PRINTF("Volume %d\n", value_q);
+            device->transport_volume = value_q;
+        }
+    }
+
+    return 0;
+}
+
 
 static int device_update_from_Track(struct btd_device *device,
                                                      GVariant *value)
@@ -682,6 +740,10 @@ bluez_device_properties_changed_cb (const gchar *pObjecPath,
     } else if (0 == g_strcmp0(pInterface, MEDIA_PLAYER1_INTERFACE)) {
 
         device_update_from_MediaPlayer1(device, properties);
+
+    } else if (0 == g_strcmp0(pInterface, MEDIA_TRANSPORT1_INTERFACE)) {
+
+	device_update_from_MediaTransport1(device, properties);
 
     }
 

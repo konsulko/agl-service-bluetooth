@@ -656,7 +656,8 @@ on_interface_proxy_properties_changed (GDBusObjectManagerClient *manager,
 
     if( (0 == g_strcmp0(pInterface, DEVICE_INTERFACE)) ||
         (0 == g_strcmp0(pInterface, MEDIA_CONTROL1_INTERFACE)) ||
-        (0 == g_strcmp0(pInterface, MEDIA_PLAYER1_INTERFACE))) {
+        (0 == g_strcmp0(pInterface, MEDIA_PLAYER1_INTERFACE)) ||
+        (0 == g_strcmp0(pInterface, MEDIA_TRANSPORT1_INTERFACE))) {
 
         if (bluez_RegisterCallback.device_properties_changed)
             bluez_RegisterCallback.device_properties_changed(pObjecPath,

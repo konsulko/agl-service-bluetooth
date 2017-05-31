@@ -253,6 +253,20 @@ static json_object *new_json_object_from_device(struct btd_device *BDdevice, uns
         }
     }
 
+    if (BD_TRANSPORT_STATE & filter)
+    {
+        jstring = BDdevice->transport_state ?
+                  json_object_new_string(BDdevice->transport_state) :
+                  json_object_new_string("none");
+        json_object_object_add(jresp, "TransportState", jstring);
+    }
+
+    if (BD_TRANSPORT_VOLUME & filter)
+    {
+        json_object_object_add(jresp, "TransportVolume",
+                               json_object_new_int(BDdevice->transport_volume));
+    }
+
     if (BD_HFPCONNECTED & filter)
     {
         jstring = (TRUE == BDdevice->hfpconnected) ?
@@ -751,7 +765,8 @@ void bt_broadcast_device_removed(struct btd_device *BDdevice)
 void bt_broadcast_device_properties_change(struct btd_device *BDdevice)
 {
 
-    unsigned int filter = BD_ADDER|BD_NAME|BD_PAIRED|BD_ACLCONNECTED|BD_AVCONNECTED|BD_HFPCONNECTED|BD_AVRCP_TITLE|BD_AVRCP_ARTIST|BD_AVRCP_STATUS|BD_AVRCP_DURATION|BD_AVRCP_POSITION;
+    unsigned int filter = BD_ADDER|BD_NAME|BD_PAIRED|BD_ACLCONNECTED|BD_AVCONNECTED|BD_HFPCONNECTED|BD_AVRCP_TITLE|BD_AVRCP_ARTIST|BD_AVRCP_STATUS|BD_AVRCP_DURATION|BD_AVRCP_POSITION|BD_TRANSPORT_STATE|BD_TRANSPORT_VOLUME;
+
     int ret;
     json_object *jresp = new_json_object_from_device(BDdevice, filter);
 

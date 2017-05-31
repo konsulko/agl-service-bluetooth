@@ -92,6 +92,7 @@
 #define MEDIA_FOLDER_INTERFACE      "org.bluez.MediaFolder"
 #define MEDIA_ITEM_INTERFACE        "org.bluez.MediaItem"
 #define MEDIA_TRANSPORT_INTERFACE   "org.bluez.MediaTransport"
+#define MEDIA_TRANSPORT1_INTERFACE  "org.bluez.MediaTransport1"
 #define MEDIA_CONTROL1_INTERFACE    "org.bluez.MediaControl1"
 
 
@@ -137,8 +138,10 @@ struct btd_device {
     gchar   *avrcp_title;
     gchar   *avrcp_artist;
     gchar   *avrcp_status;
+    gchar   *transport_state;
     guint32 avrcp_duration;
     guint32 avrcp_position;
+    guint16 transport_volume;
     gboolean    paired;
     gboolean    trusted;
     gboolean    connected;
