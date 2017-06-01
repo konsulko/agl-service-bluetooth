@@ -1443,7 +1443,7 @@ int device_cancelPairing(const gchar * bdaddr)
  * send connect command
  * If success return 0, else return -1;
  */
-int device_connect(const gchar * bdaddr)
+int device_connect(const gchar * bdaddr, const gchar * uuid)
 {
     LOGD("\n%s\n",bdaddr);
 
@@ -1470,8 +1470,9 @@ int device_connect(const gchar * bdaddr)
     devices_list_unlock();
 
     value = g_dbus_connection_call_sync(cli.system_conn, BLUEZ_SERVICE,
-                path, DEVICE_INTERFACE, "Connect",
-                NULL, NULL, G_DBUS_CALL_FLAGS_NONE,
+                path, DEVICE_INTERFACE, uuid ? "ConnectProfile" : "Connect",
+                uuid ? g_variant_new("(s)", uuid) : NULL,
+                NULL, G_DBUS_CALL_FLAGS_NONE,
                 DBUS_REPLY_TIMEOUT, NULL, &error);
 
     g_free(path);
@@ -1491,7 +1492,7 @@ int device_connect(const gchar * bdaddr)
  * send disconnect command
  * If success return 0, else return -1;
  */
-int device_disconnect(const gchar* bdaddr)
+int device_disconnect(const gchar* bdaddr, const gchar *uuid)
 {
     LOGD("\n%s\n",bdaddr);
 
@@ -1518,8 +1519,9 @@ int device_disconnect(const gchar* bdaddr)
     devices_list_unlock();
 
     value = g_dbus_connection_call_sync(cli.system_conn, BLUEZ_SERVICE,
-                path, DEVICE_INTERFACE, "Disconnect",
-                NULL, NULL, G_DBUS_CALL_FLAGS_NONE,
+                path, DEVICE_INTERFACE, uuid ? "DisconnectProfile" : "Disconnect",
+                uuid ? g_variant_new("(s)", uuid) : NULL,
+                NULL, G_DBUS_CALL_FLAGS_NONE,
                 DBUS_REPLY_TIMEOUT, NULL, &error);
 
     g_free(path);

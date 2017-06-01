@@ -183,10 +183,8 @@ int adapter_stop_discovery();
 int adapter_remove_device(const gchar *addr);
 int device_pair(const gchar * addr);
 int device_cancelPairing(const gchar * bdaddr);
-int device_connect(const gchar *addr);
-//int device_connectProfile();
-int device_disconnect(const gchar *addr);
-//int device_disconnectProfile();
+int device_connect(const gchar *addr, const gchar *uuid);
+int device_disconnect(const gchar *addr, const gchar *uuid);
 int device_set_property(const gchar * bdaddr, const gchar *property, const gchar *value);
 int device_call_avrcp_method(const gchar* device, const gchar* method);
 

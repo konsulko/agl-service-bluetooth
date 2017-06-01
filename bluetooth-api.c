@@ -476,7 +476,7 @@ static void bt_connect (struct afb_req request)
         return;
     }
 
-    ret = device_connect(value);
+    ret = device_connect(value, NULL);
 
     if (0 == ret)
     {
@@ -503,7 +503,7 @@ static void bt_disconnect (struct afb_req request)
         return;
     }
 
-    ret = device_disconnect(value);
+    ret = device_disconnect(value, NULL);
     if (0 == ret)
     {
         afb_req_success (request, NULL, NULL);
