@@ -274,6 +274,23 @@ static json_object *new_json_object_from_device(struct btd_device *BDdevice, uns
         json_object_object_add(jresp, "HFPConnected", jstring);
     }
 
+    if (BD_UUID_PROFILES & filter)
+    {
+        GList *list = BDdevice->uuids;
+
+        if (list)
+        {
+            json_object *jarray = json_object_new_array();
+
+            for (;list;list=list->next)
+            {
+                jstring = json_object_new_string(list->data);
+                json_object_array_add(jarray, jstring);
+            }
+            json_object_object_add(jresp, "UUIDs", jarray);
+        }
+    }
+
     return jresp;
 }
 
@@ -398,7 +415,7 @@ static void bt_discovery_result (struct afb_req request)
         struct btd_device *BDdevice = tmp->data;
         //LOGD("\n%s\t%s\n",BDdevice->bdaddr,BDdevice->name);
 
-        unsigned int filter = BD_ADDER|BD_NAME|BD_PAIRED|BD_ACLCONNECTED|BD_AVCONNECTED|BD_HFPCONNECTED;
+        unsigned int filter = BD_ADDER|BD_NAME|BD_PAIRED|BD_ACLCONNECTED|BD_AVCONNECTED|BD_HFPCONNECTED|BD_UUID_PROFILES;
 
         json_object *jresp = new_json_object_from_device(BDdevice, filter);
 
@@ -733,7 +750,7 @@ static void eventpush (struct afb_req request)
  */
 void bt_broadcast_device_added(struct btd_device *BDdevice)
 {
-    unsigned int filter = BD_ADDER|BD_NAME|BD_PAIRED|BD_ACLCONNECTED|BD_AVCONNECTED|BD_HFPCONNECTED;
+    unsigned int filter = BD_ADDER|BD_NAME|BD_PAIRED|BD_ACLCONNECTED|BD_AVCONNECTED|BD_HFPCONNECTED|BD_UUID_PROFILES;
     int ret;
     json_object *jresp = new_json_object_from_device(BDdevice, filter);
 
@@ -765,7 +782,7 @@ void bt_broadcast_device_removed(struct btd_device *BDdevice)
 void bt_broadcast_device_properties_change(struct btd_device *BDdevice)
 {
 
-    unsigned int filter = BD_ADDER|BD_NAME|BD_PAIRED|BD_ACLCONNECTED|BD_AVCONNECTED|BD_HFPCONNECTED|BD_AVRCP_TITLE|BD_AVRCP_ARTIST|BD_AVRCP_STATUS|BD_AVRCP_DURATION|BD_AVRCP_POSITION|BD_TRANSPORT_STATE|BD_TRANSPORT_VOLUME;
+    unsigned int filter = BD_ADDER|BD_NAME|BD_PAIRED|BD_ACLCONNECTED|BD_AVCONNECTED|BD_HFPCONNECTED|BD_AVRCP_TITLE|BD_AVRCP_ARTIST|BD_AVRCP_STATUS|BD_AVRCP_DURATION|BD_AVRCP_POSITION|BD_TRANSPORT_STATE|BD_TRANSPORT_VOLUME|BD_UUID_PROFILES;
 
     int ret;
     json_object *jresp = new_json_object_from_device(BDdevice, filter);

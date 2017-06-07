@@ -127,6 +127,7 @@ struct btd_device *device_copy(struct btd_device* device)
     temp->connected = device->connected;
     temp->avconnected = device->avconnected;
     temp->hfpconnected = device->hfpconnected;
+    temp->uuids = g_list_copy_deep(device->uuids, g_strdup, NULL);
 
     return temp;
 }
@@ -179,6 +180,12 @@ void device_free(struct btd_device* device)
         D_PRINTF("transport_state:%s\n",device->transport_state);
         g_free(device->transport_state);
         device->transport_state = NULL;
+    }
+
+    if (device->uuids) {
+        D_PRINTF("uuids: xxx\n");
+        g_list_free_full(device->uuids, g_free);
+        device->uuids = NULL;
     }
 
     g_free(device);
@@ -587,6 +594,7 @@ struct btd_device *device_copy_from_bluez(struct bt_device* device)
     temp->trusted = device->trusted;
     temp->connected = device->connected;
     temp->avconnected = device->avconnected;
+    temp->uuids = g_list_copy_deep(device->uuids, g_strdup, NULL);
 
     return temp;
 }

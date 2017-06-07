@@ -147,6 +147,7 @@ struct btd_device {
     gboolean    connected;
     gboolean    avconnected;
     gboolean    hfpconnected;
+    GList   *uuids;
 };
 
 typedef struct {

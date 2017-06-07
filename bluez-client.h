@@ -39,7 +39,7 @@ struct bt_device {
     gboolean    avconnected;
     gboolean    legacypairing;
     gint16      rssi;
-    GVariant    *uuids;
+    GList   *uuids;
 };
 
 typedef struct {

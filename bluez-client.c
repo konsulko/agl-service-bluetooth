@@ -58,7 +58,7 @@ static struct bt_device *bluez_device_copy(struct bt_device* device)
     temp->avconnected = device->avconnected;
     temp->legacypairing = device->legacypairing;
     temp->rssi = device->rssi;
-    temp->uuids = g_variant_ref(device->uuids);
+    temp->uuids = g_list_copy(device->uuids);
 
     return temp;
 }
@@ -96,7 +96,7 @@ static void bluez_device_free(struct bt_device* device)
 
     if (device->uuids){
         D_PRINTF("uuids xxx\n");
-        g_variant_unref(device->uuids);
+        g_list_free_full(device->uuids, g_free);
         device->uuids = NULL;
     }
 
@@ -310,11 +310,19 @@ bluez_device1_properties_update(struct bt_device *device, GVariant *value)
             device->rssi = value_n;
 
         }else if (0==g_strcmp0(key,"UUIDs")) {
-            //g_print ("type '%s'\n", g_variant_get_type_string (subValue));
-            if (device->uuids)
-                g_variant_unref(device->uuids);
-            device->uuids = g_variant_new_variant(subValue);
+            GVariantIter iter;
+            gchar *val;
 
+            //g_print ("type '%s'\n", g_variant_get_type_string (subValue));
+            if (device->uuids) {
+                g_list_free_full(device->uuids, g_free);
+            }
+
+            g_variant_iter_init (&iter, subValue);
+            while (g_variant_iter_next (&iter, "s", &val))
+            {
+                device->uuids = g_list_append(device->uuids, g_strdup(val));
+            }
         }
     }
 
