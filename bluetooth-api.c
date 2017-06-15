@@ -497,6 +497,16 @@ static void bt_connect (struct afb_req request)
 
     if (0 == ret)
     {
+        json_object *jresp = json_object_new_object();
+        json_object *jstring;
+
+        jstring = json_object_new_string("connected");
+        json_object_object_add(jresp, "Status", jstring);
+
+        jstring = json_object_new_string(value);
+        json_object_object_add(jresp, "Address", jstring);
+
+        event_push(jresp, "connection");
         afb_req_success (request, NULL, NULL);
     }
     else
@@ -523,6 +533,16 @@ static void bt_disconnect (struct afb_req request)
     ret = device_disconnect(value, NULL);
     if (0 == ret)
     {
+        json_object *jresp = json_object_new_object();
+        json_object *jstring;
+
+        jstring = json_object_new_string("disconnected");
+        json_object_object_add(jresp, "Status", jstring);
+
+        jstring = json_object_new_string(value);
+        json_object_object_add(jresp, "Address", jstring);
+
+        event_push(jresp, "connection");
         afb_req_success (request, NULL, NULL);
     }
     else
