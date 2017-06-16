@@ -485,6 +485,7 @@ static void bt_connect (struct afb_req request)
     LOGD("\n");
 
     const char *value = afb_req_value (request, "value");
+    const char *uuid = afb_req_value (request, "uuid");
     int ret = 0;
 
     if (NULL == value)
@@ -493,7 +494,7 @@ static void bt_connect (struct afb_req request)
         return;
     }
 
-    ret = device_connect(value, NULL);
+    ret = device_connect(value, uuid);
 
     if (0 == ret)
     {
@@ -505,6 +506,11 @@ static void bt_connect (struct afb_req request)
 
         jstring = json_object_new_string(value);
         json_object_object_add(jresp, "Address", jstring);
+
+        if (uuid) {
+            jstring = json_object_new_string(uuid);
+            json_object_object_add(jresp, "UUID", jstring);
+        }
 
         event_push(jresp, "connection");
         afb_req_success (request, NULL, NULL);
@@ -522,6 +528,7 @@ static void bt_disconnect (struct afb_req request)
     LOGD("\n");
 
     const char *value = afb_req_value (request, "value");
+    const char *uuid = afb_req_value (request, "uuid");
     int ret = 0;
 
     if (NULL == value)
@@ -541,6 +548,11 @@ static void bt_disconnect (struct afb_req request)
 
         jstring = json_object_new_string(value);
         json_object_object_add(jresp, "Address", jstring);
+
+        if (uuid) {
+            jstring = json_object_new_string(uuid);
+            json_object_object_add(jresp, "UUID", jstring);
+        }
 
         event_push(jresp, "connection");
         afb_req_success (request, NULL, NULL);
