@@ -537,7 +537,7 @@ static void bt_disconnect (struct afb_req request)
         return;
     }
 
-    ret = device_disconnect(value, NULL);
+    ret = device_disconnect(value, uuid);
     if (0 == ret)
     {
         json_object *jresp = json_object_new_object();
