@@ -1,4 +1,4 @@
-TARGET = settings-bluetooth-binding
+TARGET = agl-bluetooth-binding
 
 HEADERS = bluetooth-api.h bluetooth-manager.h bluetooth-agent.h lib_agent.h ofono-client.h lib_ofono.h lib_ofono_modem.h bluez-client.h lib_bluez.h
 SOURCES = bluetooth-api.c bluetooth-manager.c bluetooth-agent.c lib_agent.c ofono-client.c lib_ofono.c lib_ofono_modem.c bluez-client.c lib_bluez.c 
