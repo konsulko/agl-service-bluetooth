@@ -6,6 +6,10 @@
   <description>Bluetooth binding service</description>
   <author>Tasuku Suzuki &lt;tasuku.suzuki@qt.io&gt;</author>
   <license>APL2.0</license>
+  <feature name="urn:AGL:widget:required-permission">
+    <param name="urn:AGL:permission::public:hidden" value="required" />
+    <param name="http://tizen.org/privilege/internal/dbus" value="required" />
+  </feature>
   <feature name="urn:AGL:widget:provided-api">
      <param name="Bluetooth-Manager" value="ws" />
   </feature>
