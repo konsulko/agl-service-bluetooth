@@ -948,17 +948,13 @@ const struct afb_binding *afbBindingV1Register (const struct afb_binding_interfa
     API_Callback.binding_request_confirmation = bt_request_confirmation;
     BindingAPIRegister(&API_Callback);
 
-    BluetoothManagerInit();
-
     return &binding_description;
 }
 
-#if 0
 int afbBindingV1ServiceInit(struct afb_service service)
 {
-    return BluetoothManageInit();
+    return BluetoothManagerInit();
 }
-#endif
 
 
 /***************************** The End Of File ******************************/

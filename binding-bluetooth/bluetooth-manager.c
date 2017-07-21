@@ -1739,7 +1739,6 @@ int BluetoothManagerInit() {
 
     pthread_create(&thread_id, NULL, bt_event_loop_thread, NULL);
     //pthread_setname_np(thread_id, "BT_Manager");
-    sleep(1);
 
     return 0;
 }
