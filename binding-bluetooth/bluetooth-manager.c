@@ -38,12 +38,20 @@ static FILE *logfp= NULL;
 /* ------ LOCAL  FUNCTIONS --------- */
 void BluetoothManage_InitFlag_Set(gboolean value)
 {
+    g_mutex_lock(&(BluetoothManage.m));
     BluetoothManage.inited = value;
+    g_mutex_unlock(&(BluetoothManage.m));
 }
 
 gboolean BluetoothManage_InitFlag_Get(void)
 {
-    return BluetoothManage.inited;
+    gboolean inited;
+
+    g_mutex_lock(&(BluetoothManage.m));
+    inited = BluetoothManage.inited;
+    g_mutex_unlock(&(BluetoothManage.m));
+
+    return inited;
 }
 
 void devices_list_lock(void)
@@ -976,7 +984,7 @@ static void *bt_event_loop_thread()
 
         devices_list_update();
 
-        BluetoothManage.inited = TRUE;
+        BluetoothManage_InitFlag_Set(TRUE);
         LOGD("g_main_loop_run\n");
         g_main_loop_run(cli.clientloop);
 
