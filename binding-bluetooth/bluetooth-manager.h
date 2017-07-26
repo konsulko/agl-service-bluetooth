@@ -20,6 +20,7 @@
 #include <glib.h>
 #include <gio/gio.h>
 #include <glib-object.h>
+#include <sys/ioctl.h>
 
     /* Debug Trace Level */
 #define DT_LEVEL_ERROR          (1 << 1)
@@ -119,6 +120,12 @@
 
 #define ERROR_BLUEZ_REJECT "org.bluez.Error.Rejected"
 #define ERROR_BLUEZ_CANCELED "org.bluez.Error.Canceled"
+
+#define HCIDEVUP        _IOW('H', 201, int)
+
+#define AF_BLUETOOTH    31
+#define BTPROTO_HCI     1
+
 #if 0
 void DebugTraceSendMsg(int level, gchar* message);
 #else
@@ -153,6 +160,7 @@ struct btd_device {
 typedef struct {
     gboolean inited;
     GMutex m;
+    gint watch;
     GSList * device;
 } stBluetoothManage;
 

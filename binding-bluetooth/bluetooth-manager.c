@@ -19,10 +19,14 @@
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <fcntl.h>
 #include <glib.h>
 #include <gio/gio.h>
+#include <glib/gstdio.h>
 #include <glib-object.h>
 #include <syslog.h>
+#include <linux/rfkill.h>
+#include <sys/socket.h>
 #include <sys/time.h>
 
 #include "bluetooth-manager.h"
@@ -968,6 +972,100 @@ static int bt_manager_app_init(void)
     return 0;
 }
 
+int hci_interface_enable(int hdev)
+{
+    int ctl = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI);
+    int ret;
+
+    if (ctl < 0)
+        return ctl;
+
+    ret = ioctl(ctl, HCIDEVUP, hdev);
+
+    close(ctl);
+
+    return ret;
+}
+
+gboolean bluetooth_rfkill_event(GIOChannel *chan, GIOCondition cond, gpointer data)
+{
+    LOGD("\n");
+    struct rfkill_event event;
+    gchar *name, buf[8];
+    int fd, len;
+
+    fd = g_io_channel_unix_get_fd(chan);
+    len = read(fd, &event, sizeof(struct rfkill_event));
+
+    if (len != sizeof(struct rfkill_event))
+        return TRUE;
+
+    if (event.type != RFKILL_TYPE_BLUETOOTH)
+        return TRUE;
+
+    if (event.op == RFKILL_OP_DEL)
+        return TRUE;
+
+    name = g_strdup_printf("/sys/class/rfkill/rfkill%u/soft", event.idx);
+
+    fd = g_open(name, O_WRONLY);
+    write(fd, "0", 1);
+    g_close(fd, NULL);
+
+    g_free(name);
+
+    memset(&buf, 0, sizeof(buf));
+
+    name = g_strdup_printf("/sys/class/rfkill/rfkill%u/name", event.idx);
+    fd = g_open(name, O_RDONLY);
+    len = read(fd, &buf, sizeof(buf) - 1);
+
+    if (len > 0)
+    {
+        int idx = 0;
+        sscanf(buf, "hci%d", &idx);
+
+        /*
+         * 50 millisecond delay to allow time for rfkill to unblock before
+         * attempting to bring up HCI interface
+         */
+        g_usleep(50000);
+
+        LOGD ("Enabling hci%d interface\n", idx);
+        hci_interface_enable(idx);
+    }
+
+    g_free(name);
+
+    return TRUE;
+}
+
+
+/* Create RFKILL monitor to soft unblock bluetooth devices
+ *
+ * Returns: 0 - success or other errors
+ */
+int BluetoothMonitorInit()
+{
+    int fd = g_open("/dev/rfkill", O_RDWR);
+    GIOChannel *chan = NULL;
+
+    if (fd < 0)
+    {
+        LOGE("Cannot open /dev/rfkill");
+        return -1;
+    }
+
+    chan = g_io_channel_unix_new(fd);
+    g_io_channel_set_close_on_unref(chan, TRUE);
+
+    BluetoothManage.watch = g_io_add_watch(chan, G_IO_IN, bluetooth_rfkill_event, NULL);
+
+    g_io_channel_unref(chan);
+
+    return 0;
+}
+
 /*
  * Bluetooth Manager Thread
  * register callback function and create a new GMainLoop structure
@@ -985,6 +1083,7 @@ static void *bt_event_loop_thread()
         devices_list_update();
 
         BluetoothManage_InitFlag_Set(TRUE);
+        BluetoothMonitorInit();
         LOGD("g_main_loop_run\n");
         g_main_loop_run(cli.clientloop);
 

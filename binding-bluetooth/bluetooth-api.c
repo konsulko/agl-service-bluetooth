@@ -935,12 +935,6 @@ const struct afb_binding *afbBindingV1Register (const struct afb_binding_interfa
 {
     afbitf = itf;         // records the interface for accessing afb-daemon
 
-#if 1
-//temp solution to fix configure Bluetooth USB Dongle
-    system("rfkill unblock bluetooth");
-    system("hciconfig hci0 up");
-#endif
-
     Binding_RegisterCallback_t API_Callback;
     API_Callback.binding_device_added = bt_broadcast_device_added;
     API_Callback.binding_device_removed = bt_broadcast_device_removed;
