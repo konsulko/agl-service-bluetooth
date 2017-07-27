@@ -1066,6 +1066,52 @@ int BluetoothMonitorInit()
     return 0;
 }
 
+gboolean bt_autoconnect(gpointer ptr)
+{
+    LOGD("\n");
+    gboolean ret = TRUE;
+    GSList *list, *tmp;
+    gchar *bdaddr = NULL;
+
+    devices_list_lock();
+
+    list = GetBluezDevicesList();
+    tmp = list;
+
+    while (tmp)
+    {
+        struct bt_device *BDdevice = tmp->data;
+        tmp = tmp->next;
+
+        if (BDdevice->paired && bdaddr == NULL)
+        {
+            bdaddr = g_strdup(BDdevice->bdaddr);
+        }
+
+        if (BDdevice->connected)
+        {
+            g_slist_free_full(list, g_free);
+            devices_list_unlock();
+            return FALSE;
+        }
+    }
+
+    g_slist_free_full(list, g_free);
+    devices_list_unlock();
+
+    /*
+     * NOTE: Attempt to connect to first paired device, and once connected don't
+     * poll anymore.
+     */
+    if (bdaddr != NULL)
+    {
+        ret = device_connect(bdaddr, NULL) ? TRUE : FALSE;
+        g_free(bdaddr);
+    }
+
+    return ret;
+}
+
 /*
  * Bluetooth Manager Thread
  * register callback function and create a new GMainLoop structure
@@ -1084,6 +1130,9 @@ static void *bt_event_loop_thread()
 
         BluetoothManage_InitFlag_Set(TRUE);
         BluetoothMonitorInit();
+
+        g_timeout_add_seconds(5, bt_autoconnect, NULL);
+
         LOGD("g_main_loop_run\n");
         g_main_loop_run(cli.clientloop);
 
