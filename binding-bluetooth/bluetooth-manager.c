@@ -1070,8 +1070,7 @@ gboolean bt_autoconnect(gpointer ptr)
 {
     LOGD("\n");
     gboolean ret = TRUE;
-    GSList *list, *tmp;
-    gchar *bdaddr = NULL;
+    GSList *list, *tmp, *addr_list = NULL;
 
     devices_list_lock();
 
@@ -1083,14 +1082,15 @@ gboolean bt_autoconnect(gpointer ptr)
         struct bt_device *BDdevice = tmp->data;
         tmp = tmp->next;
 
-        if (BDdevice->paired && bdaddr == NULL)
+        if (BDdevice->paired)
         {
-            bdaddr = g_strdup(BDdevice->bdaddr);
+            addr_list = g_slist_append(addr_list, g_strdup(BDdevice->bdaddr));
         }
 
         if (BDdevice->connected)
         {
             g_slist_free_full(list, g_free);
+            g_slist_free_full(addr_list, g_free);
             devices_list_unlock();
             return FALSE;
         }
@@ -1099,15 +1099,26 @@ gboolean bt_autoconnect(gpointer ptr)
     g_slist_free_full(list, g_free);
     devices_list_unlock();
 
-    /*
-     * NOTE: Attempt to connect to first paired device, and once connected don't
-     * poll anymore.
-     */
-    if (bdaddr != NULL)
+    if (addr_list == NULL)
     {
-        ret = device_connect(bdaddr, NULL) ? TRUE : FALSE;
-        g_free(bdaddr);
+        return FALSE;
     }
+
+    tmp = addr_list;
+
+    while (tmp)
+    {
+        LOGD("Autoconnect to %s\n", tmp->data);
+        ret = device_connect(tmp->data, NULL) ? TRUE : FALSE;
+        tmp = tmp->next;
+
+        if (ret == FALSE)
+        {
+            break;
+        }
+    }
+
+    g_slist_free_full(addr_list, g_free);
 
     return ret;
 }
