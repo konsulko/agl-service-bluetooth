@@ -68,6 +68,128 @@ void devices_list_unlock(void)
     g_mutex_unlock(&(BluetoothManage.m));
 }
 
+gchar *bt_priority_path()
+{
+    gchar *path = g_build_filename(g_get_user_config_dir(), "bluetooth",  NULL);
+    gchar *file;
+
+    g_mkdir(path, 0664);
+
+    file = g_build_filename(path, "priorities.lst", NULL);
+    g_free(path);
+
+    return file;
+}
+
+void bt_remove_priority(gchar *bdaddr)
+{
+    LOGD("\n");
+    FILE *fp;
+    GSList *item, *tmp;
+    gchar *path;
+
+    LOGD("bd_addr: %s\n", bdaddr);
+
+    devices_list_lock();
+
+    item = g_slist_find_custom(BluetoothManage.priorities, bdaddr, g_strcmp0);
+    if (item == NULL)
+    {
+        devices_list_unlock();
+        return;
+    }
+    g_free(item->data);
+    tmp = BluetoothManage.priorities = g_slist_remove_link(BluetoothManage.priorities, item);
+
+    path = bt_priority_path();
+    fp = g_fopen(path, "w");
+    g_free(path);
+
+    if (fp == NULL)
+    {
+        devices_list_unlock();
+        return;
+    }
+
+    while (tmp && tmp->data)
+    {
+        fputs(tmp->data, fp);
+        fputs("\n", fp);
+        tmp = tmp->next;
+    }
+
+    fclose(fp);
+
+    devices_list_unlock();
+}
+
+void bt_save_priority(gchar *bdaddr)
+{
+    LOGD("\n");
+    FILE *fp;
+    gchar *path;
+
+    LOGD("bd_addr: %s\n", bdaddr);
+
+    devices_list_lock();
+
+    if (g_slist_find(BluetoothManage.priorities, bdaddr))
+    {
+        devices_list_unlock();
+        return;
+    }
+
+    path = bt_priority_path();
+    fp = g_fopen(path, "a+");
+    g_free(path);
+
+    if (fp == NULL)
+    {
+        devices_list_unlock();
+        return;
+    }
+
+    fputs(bdaddr, fp);
+    fputs("\n", fp);
+    fclose(fp);
+
+    BluetoothManage.priorities = g_slist_append(BluetoothManage.priorities, g_strdup(bdaddr));
+
+    devices_list_unlock();
+}
+
+GSList *bt_priority_list()
+{
+    LOGD("\n");
+    FILE *fp;
+    GSList *list = NULL;
+    gchar *path;
+    gchar bdaddr[18];
+
+    devices_list_lock();
+
+    path = bt_priority_path();
+
+    fp = g_fopen(path, "r");
+    g_free(path);
+
+    if (fp == NULL)
+    {
+        devices_list_unlock();
+        return NULL;
+    }
+
+    while (fscanf(fp, "%17s\n", &bdaddr) == 1)
+    {
+        LOGD("Found priority device %s\n", bdaddr);
+        list = g_slist_append(list, g_strdup(bdaddr));
+    }
+
+    devices_list_unlock();
+
+    return list;
+}
+
 static int device_path_cmp(struct btd_device * device, const gchar* pPath )
 {
     return !g_str_has_prefix (pPath, device->path);
@@ -943,6 +1065,8 @@ static int bt_manager_app_init(void)
     AgentRegCallback.agent_RequestConfirmation = agent_requset_confirm;
     agent_API_register(&AgentRegCallback);
 
+    BluetoothManage.priorities = bt_priority_list();
+
     ret = BluezManagerInit();
     if (0 != ret )
     {
@@ -1070,7 +1194,7 @@ gboolean bt_autoconnect(gpointer ptr)
 {
     LOGD("\n");
     gboolean ret = TRUE;
-    GSList *list, *tmp, *addr_list = NULL;
+    GSList *list, *tmp;
 
     devices_list_lock();
 
@@ -1082,15 +1206,9 @@ gboolean bt_autoconnect(gpointer ptr)
         struct bt_device *BDdevice = tmp->data;
         tmp = tmp->next;
 
-        if (BDdevice->paired)
-        {
-            addr_list = g_slist_append(addr_list, g_strdup(BDdevice->bdaddr));
-        }
-
         if (BDdevice->connected)
         {
             g_slist_free_full(list, g_free);
-            g_slist_free_full(addr_list, g_free);
             devices_list_unlock();
             return FALSE;
         }
@@ -1099,12 +1217,12 @@ gboolean bt_autoconnect(gpointer ptr)
     g_slist_free_full(list, g_free);
     devices_list_unlock();
 
-    if (addr_list == NULL)
-    {
-        return FALSE;
-    }
+    tmp = BluetoothManage.priorities;
 
-    tmp = addr_list;
+    if (tmp == NULL)
+    {
+        return TRUE;
+    }
 
     while (tmp)
     {
@@ -1117,8 +1235,6 @@ gboolean bt_autoconnect(gpointer ptr)
             break;
         }
     }
-
-    g_slist_free_full(addr_list, g_free);
 
     return ret;
 }
@@ -1459,6 +1575,8 @@ int adapter_remove_device(const gchar* bdaddr)
                 g_variant_new("(o)", path), NULL,
                 G_DBUS_CALL_FLAGS_NONE, DBUS_REPLY_TIMEOUT, NULL, &error);
 
+    bt_remove_priority(bdaddr);
+
     g_free(path);
 
     if (NULL == value) {
@@ -1504,6 +1622,14 @@ void device_pair_done_cb(GDBusConnection *source_object,
                         gpointer user_data)
 {
     LOGD("\n");
+    gchar *bdaddr = user_data;
+
+    if (g_task_had_error(G_TASK(res)) == FALSE)
+    {
+        bt_save_priority(bdaddr);
+    }
+    g_free(bdaddr);
+
     g_dbus_connection_call_finish (source_object, res, NULL);
 
 }
@@ -1559,7 +1685,7 @@ int device_pair(const gchar * bdaddr)
                 path, DEVICE_INTERFACE, "Pair",
                 NULL, NULL, G_DBUS_CALL_FLAGS_NONE,
                 DBUS_REPLY_TIMEOUT, NULL,
-                (GAsyncReadyCallback)device_pair_done_cb, NULL);
+                (GAsyncReadyCallback)device_pair_done_cb, g_strdup(bdaddr));
 
     g_free(path);
 #endif

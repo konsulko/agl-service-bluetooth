@@ -162,6 +162,7 @@ typedef struct {
     GMutex m;
     gint watch;
     GSList * device;
+    GSList * priorities;
 } stBluetoothManage;
 
 typedef struct tagBinding_RegisterCallback
