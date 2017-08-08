@@ -20,17 +20,14 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <json-c/json.h>
+
+#define AFB_BINDING_VERSION 2
 #include <afb/afb-binding.h>
 #include <afb/afb-service-itf.h>
 
 #include "bluetooth-manager.h"
 #include "bluetooth-agent.h"
 #include "bluetooth-api.h"
-
-/*
- * the interface to afb-daemon
- */
-const struct afb_binding_interface *afbitf;
 
 struct event
 {
@@ -85,7 +82,7 @@ static int event_add(const char *tag, const char *name)
 	strcpy(e->tag, tag);
 
 	/* make the event */
-	e->event = afb_daemon_make_event(afbitf->daemon, name);
+	e->event = afb_daemon_make_event(name);
 	if (!e->event.closure) { free(e); return -1; }
 
 	/* link */
@@ -891,50 +888,36 @@ static void bt_send_confirmation(struct afb_req request)
 /*
  * array of the verbs exported to afb-daemon
  */
-static const struct afb_verb_desc_v1 binding_verbs[]= {
+static const struct afb_verb_v2 binding_verbs[]= {
 /* VERB'S NAME                    SESSION MANAGEMENT                FUNCTION TO CALL                    SHORT DESCRIPTION */
-{ .name = "power",               .session = AFB_SESSION_NONE,      .callback = bt_power,               .info = "Set Bluetooth Power ON or OFF" },
-{ .name = "start_discovery",     .session = AFB_SESSION_NONE,      .callback = bt_start_discovery,     .info = "Start discovery" },
-{ .name = "stop_discovery",      .session = AFB_SESSION_NONE,      .callback = bt_stop_discovery,      .info = "Stop discovery" },
-{ .name = "discovery_result",    .session = AFB_SESSION_NONE,      .callback = bt_discovery_result,    .info = "Get discovery result" },
-{ .name = "remove_device",       .session = AFB_SESSION_NONE,      .callback = bt_remove_device,       .info = "Remove the special device" },
-{ .name = "pair",                .session = AFB_SESSION_NONE,      .callback = bt_pair,                .info = "Pair to special device" },
-{ .name = "cancel_pair",         .session = AFB_SESSION_NONE,      .callback = bt_cancel_pairing,      .info = "Cancel the pairing process" },
-{ .name = "connect",             .session = AFB_SESSION_NONE,      .callback = bt_connect,             .info = "Connect to special device" },
-{ .name = "disconnect",          .session = AFB_SESSION_NONE,      .callback = bt_disconnect,          .info = "Disconnect special device" },
-{ .name = "set_device_property", .session = AFB_SESSION_NONE,      .callback = bt_set_device_property, .info = "Set special device property" },
-{ .name = "set_property",        .session = AFB_SESSION_NONE,      .callback = bt_set_property,        .info = "Set Bluetooth property" },
-{ .name = "set_avrcp_controls",  .session = AFB_SESSION_NONE,      .callback = bt_set_avrcp_controls,  .info = "Set Bluetooth AVRCP controls" },
-{ .name = "send_confirmation",   .session = AFB_SESSION_NONE,      .callback = bt_send_confirmation,   .info = "Send Confirmation" },
-{ .name = "eventadd",            .session = AFB_SESSION_NONE,      .callback = eventadd,               .info = "adds the event of 'name' for the 'tag'"},
-{ .name = "eventdel",            .session = AFB_SESSION_NONE,      .callback = eventdel,               .info = "deletes the event of 'tag'"},
-{ .name = "eventsub",            .session = AFB_SESSION_NONE,      .callback = eventsub,               .info = "subscribes to the event of 'tag'"},
-{ .name = "eventunsub",          .session = AFB_SESSION_NONE,      .callback = eventunsub,             .info = "unsubscribes to the event of 'tag'"},
-{ .name = "eventpush",           .session = AFB_SESSION_NONE,      .callback = eventpush,              .info = "pushs the event of 'tag' with the 'data'"},
+{ .verb = "power",               .session = AFB_SESSION_NONE,      .callback = bt_power,               .info = "Set Bluetooth Power ON or OFF" },
+{ .verb = "start_discovery",     .session = AFB_SESSION_NONE,      .callback = bt_start_discovery,     .info = "Start discovery" },
+{ .verb = "stop_discovery",      .session = AFB_SESSION_NONE,      .callback = bt_stop_discovery,      .info = "Stop discovery" },
+{ .verb = "discovery_result",    .session = AFB_SESSION_NONE,      .callback = bt_discovery_result,    .info = "Get discovery result" },
+{ .verb = "remove_device",       .session = AFB_SESSION_NONE,      .callback = bt_remove_device,       .info = "Remove the special device" },
+{ .verb = "pair",                .session = AFB_SESSION_NONE,      .callback = bt_pair,                .info = "Pair to special device" },
+{ .verb = "cancel_pair",         .session = AFB_SESSION_NONE,      .callback = bt_cancel_pairing,      .info = "Cancel the pairing process" },
+{ .verb = "connect",             .session = AFB_SESSION_NONE,      .callback = bt_connect,             .info = "Connect to special device" },
+{ .verb = "disconnect",          .session = AFB_SESSION_NONE,      .callback = bt_disconnect,          .info = "Disconnect special device" },
+{ .verb = "set_device_property", .session = AFB_SESSION_NONE,      .callback = bt_set_device_property, .info = "Set special device property" },
+{ .verb = "set_property",        .session = AFB_SESSION_NONE,      .callback = bt_set_property,        .info = "Set Bluetooth property" },
+{ .verb = "set_avrcp_controls",  .session = AFB_SESSION_NONE,      .callback = bt_set_avrcp_controls,  .info = "Set Bluetooth AVRCP controls" },
+{ .verb = "send_confirmation",   .session = AFB_SESSION_NONE,      .callback = bt_send_confirmation,   .info = "Send Confirmation" },
+{ .verb = "eventadd",            .session = AFB_SESSION_NONE,      .callback = eventadd,               .info = "adds the event of 'name' for the 'tag'"},
+{ .verb = "eventdel",            .session = AFB_SESSION_NONE,      .callback = eventdel,               .info = "deletes the event of 'tag'"},
+{ .verb = "eventsub",            .session = AFB_SESSION_NONE,      .callback = eventsub,               .info = "subscribes to the event of 'tag'"},
+{ .verb = "eventunsub",          .session = AFB_SESSION_NONE,      .callback = eventunsub,             .info = "unsubscribes to the event of 'tag'"},
+{ .verb = "eventpush",           .session = AFB_SESSION_NONE,      .callback = eventpush,              .info = "pushs the event of 'tag' with the 'data'"},
 
-{ .name = NULL } /* marker for end of the array */
-};
-
-/*
- * description of the binding for afb-daemon
- */
-static const struct afb_binding binding_description =
-{
-    .type   = AFB_BINDING_VERSION_1,
-    .v1 = {
-        .info   = "Application Framework Binder - Bluetooth Manager plugin",
-        .prefix = "Bluetooth-Manager",
-        .verbs   = binding_verbs
-    }
+{ } /* marker for end of the array */
 };
 
 /*
  * activation function for registering the binding called by afb-daemon
  */
-const struct afb_binding *afbBindingV1Register (const struct afb_binding_interface *itf)
-{
-    afbitf = itf;         // records the interface for accessing afb-daemon
 
+static int init()
+{
     Binding_RegisterCallback_t API_Callback;
     API_Callback.binding_device_added = bt_broadcast_device_added;
     API_Callback.binding_device_removed = bt_broadcast_device_removed;
@@ -942,14 +925,20 @@ const struct afb_binding *afbBindingV1Register (const struct afb_binding_interfa
     API_Callback.binding_request_confirmation = bt_request_confirmation;
     BindingAPIRegister(&API_Callback);
 
-    return &binding_description;
+    return 0;
 }
 
-int afbBindingV1ServiceInit(struct afb_service service)
+/*
+ * description of the binding for afb-daemon
+ */
+const struct afb_binding_v2 afbBindingV2 =
 {
-    return BluetoothManagerInit();
-}
-
+    .specification    = "Application Framework Binder - Bluetooth Manager plugin",
+    .api              = "Bluetooth-Manager",
+    .verbs            = binding_verbs,
+    .preinit          = init,
+    .init             = BluetoothManagerInit,
+};
 
 /***************************** The End Of File ******************************/
 
