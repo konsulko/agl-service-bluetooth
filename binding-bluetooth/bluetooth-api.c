@@ -33,53 +33,33 @@ struct event
 {
 	struct event *next;
 	struct afb_event event;
-	char tag[1];
+	char name[];
 };
 
-static struct event *events = 0;
+static struct event *events = NULL;
 
-/* searchs the event of tag */
-static struct event *event_get(const char *tag)
+/* searchs the event of name */
+static struct event *event_get(const char *name)
 {
 	struct event *e = events;
-	while(e && strcmp(e->tag, tag))
+	while(e && strcmp(e->name, name))
 		e = e->next;
 	return e;
 }
 
-/* deletes the event of tag */
-static int event_del(const char *tag)
-{
-	struct event *e, **p;
-
-	/* check exists */
-	e = event_get(tag);
-	if (!e) return -1;
-
-	/* unlink */
-	p = &events;
-	while(*p != e) p = &(*p)->next;
-	*p = e->next;
-
-	/* destroys */
-	afb_event_drop(e->event);
-	free(e);
-	return 0;
-}
-
-/* creates the event of tag */
-static int event_add(const char *tag, const char *name)
+/* creates the event of name */
+static int event_add(const char *name)
 {
 	struct event *e;
 
-	/* check valid tag */
-	e = event_get(tag);
+	/* check valid name */
+	e = event_get(name);
 	if (e) return -1;
 
 	/* creation */
-	e = malloc(strlen(tag) + sizeof *e);
+	e = malloc(strlen(name) + sizeof *e + 1);
 	if (!e) return -1;
-	strcpy(e->tag, tag);
+	strcpy(e->name, name);
 
 	/* make the event */
 	e->event = afb_daemon_make_event(name);
@@ -91,24 +71,24 @@ static int event_add(const char *tag, const char *name)
 	return 0;
 }
 
-static int event_subscribe(struct afb_req request, const char *tag)
+static int event_subscribe(struct afb_req request, const char *name)
 {
 	struct event *e;
-	e = event_get(tag);
+	e = event_get(name);
 	return e ? afb_req_subscribe(request, e->event) : -1;
 }
 
-static int event_unsubscribe(struct afb_req request, const char *tag)
+static int event_unsubscribe(struct afb_req request, const char *name)
 {
 	struct event *e;
-	e = event_get(tag);
+	e = event_get(name);
 	return e ? afb_req_unsubscribe(request, e->event) : -1;
 }
 
-static int event_push(struct json_object *args, const char *tag)
+static int event_push(struct json_object *args, const char *name)
 {
 	struct event *e;
-	e = event_get(tag);
+	e = event_get(name);
 	return e ? afb_event_push(e->event, json_object_get(args)) : -1;
 }
 
@@ -711,65 +691,26 @@ static void bt_set_avrcp_controls (struct afb_req request)
     }
 }
 
-static void eventadd (struct afb_req request)
+static void subscribe(struct afb_req request)
 {
-	const char *tag = afb_req_value(request, "tag");
-	const char *name = afb_req_value(request, "name");
+	const char *name = afb_req_value(request, "value");
 
-	if (tag == NULL || name == NULL)
+	if (name == NULL)
 		afb_req_fail(request, "failed", "bad arguments");
-	else if (0 != event_add(tag, name))
-		afb_req_fail(request, "failed", "creation error");
-	else
-		afb_req_success(request, NULL, NULL);
-}
-
-static void eventdel (struct afb_req request)
-{
-	const char *tag = afb_req_value(request, "tag");
-
-	if (tag == NULL)
-		afb_req_fail(request, "failed", "bad arguments");
-	else if (0 != event_del(tag))
-		afb_req_fail(request, "failed", "deletion error");
-	else
-		afb_req_success(request, NULL, NULL);
-}
-
-static void eventsub (struct afb_req request)
-{
-	const char *tag = afb_req_value(request, "tag");
-
-	if (tag == NULL)
-		afb_req_fail(request, "failed", "bad arguments");
-	else if (0 != event_subscribe(request, tag))
+	else if (0 != event_subscribe(request, name))
 		afb_req_fail(request, "failed", "subscription error");
 	else
 		afb_req_success(request, NULL, NULL);
 }
 
-static void eventunsub (struct afb_req request)
+static void unsubscribe(struct afb_req request)
 {
-	const char *tag = afb_req_value(request, "tag");
+	const char *name = afb_req_value(request, "value");
 
-	if (tag == NULL)
+	if (name == NULL)
 		afb_req_fail(request, "failed", "bad arguments");
-	else if (0 != event_unsubscribe(request, tag))
+	else if (0 != event_unsubscribe(request, name))
 		afb_req_fail(request, "failed", "unsubscription error");
-	else
-		afb_req_success(request, NULL, NULL);
-}
-
-static void eventpush (struct afb_req request)
-{
-	const char *tag = afb_req_value(request, "tag");
-	const char *data = afb_req_value(request, "data");
-	json_object *object = data ? json_tokener_parse(data) : NULL;
-
-	if (tag == NULL)
-		afb_req_fail(request, "failed", "bad arguments");
-	else if (0 > event_push(object, tag))
-		afb_req_fail(request, "failed", "push error");
 	else
 		afb_req_success(request, NULL, NULL);
 }
@@ -785,7 +726,6 @@ void bt_broadcast_device_added(struct btd_device *BDdevice)
 
     LOGD("\n");
     ret = event_push(jresp,"device_added");
-    //ret = afb_daemon_broadcast_event(afbitf->daemon, "device_added", jresp);
     LOGD("%d\n",ret);
 }
 
@@ -800,7 +740,6 @@ void bt_broadcast_device_removed(struct btd_device *BDdevice)
 
     LOGD("\n");
     ret = event_push(jresp,"device_removed");
-    //ret = afb_daemon_broadcast_event(afbitf->daemon, "device_removed", jresp);
     LOGD("%d\n",ret);
 }
 
@@ -818,7 +757,6 @@ void bt_broadcast_device_properties_change(struct btd_device *BDdevice)
 
     LOGD("\n");
     ret = event_push(jresp,"device_updated");
-    //ret = afb_daemon_broadcast_event(afbitf->daemon, "device_updated", jresp);
     LOGD("%d\n",ret);
 }
 
@@ -837,7 +775,6 @@ gboolean bt_request_confirmation(const gchar *device, guint passkey)
     json_object_object_add(jresp, "Passkey", jstring);
 
     ret = event_push(jresp,"request_confirmation");
-    //ret = afb_daemon_broadcast_event(afbitf->daemon, "device_updated", jresp);
 
     LOGD("%d\n",ret);
 
@@ -903,11 +840,8 @@ static const struct afb_verb_v2 binding_verbs[]= {
 { .verb = "set_property",        .session = AFB_SESSION_NONE,      .callback = bt_set_property,        .info = "Set Bluetooth property" },
 { .verb = "set_avrcp_controls",  .session = AFB_SESSION_NONE,      .callback = bt_set_avrcp_controls,  .info = "Set Bluetooth AVRCP controls" },
 { .verb = "send_confirmation",   .session = AFB_SESSION_NONE,      .callback = bt_send_confirmation,   .info = "Send Confirmation" },
-{ .verb = "eventadd",            .session = AFB_SESSION_NONE,      .callback = eventadd,               .info = "adds the event of 'name' for the 'tag'"},
-{ .verb = "eventdel",            .session = AFB_SESSION_NONE,      .callback = eventdel,               .info = "deletes the event of 'tag'"},
-{ .verb = "eventsub",            .session = AFB_SESSION_NONE,      .callback = eventsub,               .info = "subscribes to the event of 'tag'"},
-{ .verb = "eventunsub",          .session = AFB_SESSION_NONE,      .callback = eventunsub,             .info = "unsubscribes to the event of 'tag'"},
-{ .verb = "eventpush",           .session = AFB_SESSION_NONE,      .callback = eventpush,              .info = "pushs the event of 'tag' with the 'data'"},
+{ .verb = "subscribe",           .session = AFB_SESSION_NONE,      .callback = subscribe,              .info = "subscribes to the event of 'value'"},
+{ .verb = "unsubscribe",         .session = AFB_SESSION_NONE,      .callback = unsubscribe,            .info = "unsubscribes to the event of 'value'"},
 
 { } /* marker for end of the array */
 };
@@ -924,6 +858,13 @@ static int init()
     API_Callback.binding_device_properties_changed = bt_broadcast_device_properties_change;
     API_Callback.binding_request_confirmation = bt_request_confirmation;
     BindingAPIRegister(&API_Callback);
+
+    // register binding events
+    event_add("connection");
+    event_add("request_confirmation");
+    event_add("device_added");
+    event_add("device_removed");
+    event_add("device_updated");
 
     return 0;
 }
