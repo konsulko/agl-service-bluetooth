@@ -1258,7 +1258,7 @@ static void *bt_event_loop_thread()
         BluetoothManage_InitFlag_Set(TRUE);
         BluetoothMonitorInit();
 
-        g_timeout_add_seconds(5, bt_autoconnect, NULL);
+        BluetoothManage.autoconnect = g_timeout_add_seconds(5, bt_autoconnect, NULL);
 
         LOGD("g_main_loop_run\n");
         g_main_loop_run(cli.clientloop);
@@ -1491,6 +1491,11 @@ int adapter_start_discovery()
     if (FALSE == BluetoothManage_InitFlag_Get()) {
         LOGW("BluetoothManage Not Init\n");
         return -1;
+    }
+
+    if (BluetoothManage.autoconnect > 0) {
+        LOGW("Canceling autoconnection for discovery mode\n");
+        g_source_remove(BluetoothManage.autoconnect);
     }
 
     value = g_dbus_connection_call_sync(cli.system_conn, BLUEZ_SERVICE,

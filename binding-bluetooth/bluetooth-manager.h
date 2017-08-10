@@ -161,6 +161,7 @@ typedef struct {
     gboolean inited;
     GMutex m;
     gint watch;
+    guint autoconnect;
     GSList * device;
     GSList * priorities;
 } stBluetoothManage;
