@@ -190,6 +190,25 @@ GSList *bt_priority_list()
     return list;
 }
 
+int device_priority_list(void *(object_cb)(void *, gchar *), void *ptr)
+{
+    GSList *tmp;
+
+    devices_list_lock();
+
+    tmp = BluetoothManage.priorities;
+
+    while (tmp)
+    {
+        object_cb(ptr, tmp->data);
+        tmp = tmp->next;
+    }
+
+    devices_list_unlock();
+
+    return 0;
+}
+
 static int device_path_cmp(struct btd_device * device, const gchar* pPath )
 {
     return !g_str_has_prefix (pPath, device->path);

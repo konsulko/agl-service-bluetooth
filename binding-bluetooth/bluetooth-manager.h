@@ -198,6 +198,7 @@ int device_connect(const gchar *addr, const gchar *uuid);
 int device_disconnect(const gchar *addr, const gchar *uuid);
 int device_set_property(const gchar * bdaddr, const gchar *property, const gchar *value);
 int device_call_avrcp_method(const gchar* device, const gchar* method);
+int device_priority_list(void *(object_cb)(void *, gchar *), void *ptr);
 
 int adapter_set_property(const gchar* property, gboolean value) ;
 

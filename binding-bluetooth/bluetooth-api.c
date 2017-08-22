@@ -567,6 +567,19 @@ static void bt_remove_device (struct afb_req request)
 
 }
 
+static void bt_device_priorities_cb (json_object *array, gchar *str)
+{
+    json_object_array_add(array, json_object_new_string(str));
+}
+
+static void bt_device_priorities (struct afb_req request)
+{
+    json_object *jarray = json_object_new_array();
+
+    device_priority_list(&bt_device_priorities_cb, jarray);
+
+    afb_req_success(request, jarray, "Display paired device priority");
+}
 
 /**/
 static void bt_set_device_property (struct afb_req request)
@@ -836,6 +849,7 @@ static const struct afb_verb_v2 binding_verbs[]= {
 { .verb = "cancel_pair",         .session = AFB_SESSION_NONE,      .callback = bt_cancel_pairing,      .info = "Cancel the pairing process" },
 { .verb = "connect",             .session = AFB_SESSION_NONE,      .callback = bt_connect,             .info = "Connect to special device" },
 { .verb = "disconnect",          .session = AFB_SESSION_NONE,      .callback = bt_disconnect,          .info = "Disconnect special device" },
+{ .verb = "device_priorities",	 .session = AFB_SESSION_NONE,      .callback = bt_device_priorities,   .info = "Get BT paired device priorites" },
 { .verb = "set_device_property", .session = AFB_SESSION_NONE,      .callback = bt_set_device_property, .info = "Set special device property" },
 { .verb = "set_property",        .session = AFB_SESSION_NONE,      .callback = bt_set_property,        .info = "Set Bluetooth property" },
 { .verb = "set_avrcp_controls",  .session = AFB_SESSION_NONE,      .callback = bt_set_avrcp_controls,  .info = "Set Bluetooth AVRCP controls" },
