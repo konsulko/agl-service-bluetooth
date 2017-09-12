@@ -880,7 +880,7 @@ static int init()
     event_add("device_removed");
     event_add("device_updated");
 
-    return 0;
+    return BluetoothManagerInit();
 }
 
 /*
@@ -891,8 +891,7 @@ const struct afb_binding_v2 afbBindingV2 =
     .specification    = "Application Framework Binder - Bluetooth Manager plugin",
     .api              = "Bluetooth-Manager",
     .verbs            = binding_verbs,
-    .preinit          = init,
-    .init             = BluetoothManagerInit,
+    .init             = init,
 };
 
 /***************************** The End Of File ******************************/
