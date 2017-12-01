@@ -1251,6 +1251,7 @@ gboolean bt_autoconnect(gpointer ptr)
 
         if (ret == FALSE)
         {
+            setHMIStatus(ACTIVE);
             break;
         }
     }
