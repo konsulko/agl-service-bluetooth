@@ -839,23 +839,23 @@ static void bt_send_confirmation(struct afb_req request)
  * array of the verbs exported to afb-daemon
  */
 static const struct afb_verb_v2 binding_verbs[]= {
-/* VERB'S NAME                    SESSION MANAGEMENT                FUNCTION TO CALL                    SHORT DESCRIPTION */
-{ .verb = "power",               .session = AFB_SESSION_NONE,      .callback = bt_power,               .info = "Set Bluetooth Power ON or OFF" },
-{ .verb = "start_discovery",     .session = AFB_SESSION_NONE,      .callback = bt_start_discovery,     .info = "Start discovery" },
-{ .verb = "stop_discovery",      .session = AFB_SESSION_NONE,      .callback = bt_stop_discovery,      .info = "Stop discovery" },
-{ .verb = "discovery_result",    .session = AFB_SESSION_NONE,      .callback = bt_discovery_result,    .info = "Get discovery result" },
-{ .verb = "remove_device",       .session = AFB_SESSION_NONE,      .callback = bt_remove_device,       .info = "Remove the special device" },
-{ .verb = "pair",                .session = AFB_SESSION_NONE,      .callback = bt_pair,                .info = "Pair to special device" },
-{ .verb = "cancel_pair",         .session = AFB_SESSION_NONE,      .callback = bt_cancel_pairing,      .info = "Cancel the pairing process" },
-{ .verb = "connect",             .session = AFB_SESSION_NONE,      .callback = bt_connect,             .info = "Connect to special device" },
-{ .verb = "disconnect",          .session = AFB_SESSION_NONE,      .callback = bt_disconnect,          .info = "Disconnect special device" },
-{ .verb = "device_priorities",	 .session = AFB_SESSION_NONE,      .callback = bt_device_priorities,   .info = "Get BT paired device priorites" },
-{ .verb = "set_device_property", .session = AFB_SESSION_NONE,      .callback = bt_set_device_property, .info = "Set special device property" },
-{ .verb = "set_property",        .session = AFB_SESSION_NONE,      .callback = bt_set_property,        .info = "Set Bluetooth property" },
-{ .verb = "set_avrcp_controls",  .session = AFB_SESSION_NONE,      .callback = bt_set_avrcp_controls,  .info = "Set Bluetooth AVRCP controls" },
-{ .verb = "send_confirmation",   .session = AFB_SESSION_NONE,      .callback = bt_send_confirmation,   .info = "Send Confirmation" },
-{ .verb = "subscribe",           .session = AFB_SESSION_NONE,      .callback = subscribe,              .info = "subscribes to the event of 'value'"},
-{ .verb = "unsubscribe",         .session = AFB_SESSION_NONE,      .callback = unsubscribe,            .info = "unsubscribes to the event of 'value'"},
+/* VERB'S NAME                    FUNCTION TO CALL                    SHORT DESCRIPTION */
+{ .verb = "power",               .callback = bt_power,               .info = "Set Bluetooth Power ON or OFF" },
+{ .verb = "start_discovery",     .callback = bt_start_discovery,     .info = "Start discovery" },
+{ .verb = "stop_discovery",      .callback = bt_stop_discovery,      .info = "Stop discovery" },
+{ .verb = "discovery_result",    .callback = bt_discovery_result,    .info = "Get discovery result" },
+{ .verb = "remove_device",       .callback = bt_remove_device,       .info = "Remove the special device" },
+{ .verb = "pair",                .callback = bt_pair,                .info = "Pair to special device" },
+{ .verb = "cancel_pair",         .callback = bt_cancel_pairing,      .info = "Cancel the pairing process" },
+{ .verb = "connect",             .callback = bt_connect,             .info = "Connect to special device" },
+{ .verb = "disconnect",          .callback = bt_disconnect,          .info = "Disconnect special device" },
+{ .verb = "device_priorities",	 .callback = bt_device_priorities,   .info = "Get BT paired device priorites" },
+{ .verb = "set_device_property", .callback = bt_set_device_property, .info = "Set special device property" },
+{ .verb = "set_property",        .callback = bt_set_property,        .info = "Set Bluetooth property" },
+{ .verb = "set_avrcp_controls",  .callback = bt_set_avrcp_controls,  .info = "Set Bluetooth AVRCP controls" },
+{ .verb = "send_confirmation",   .callback = bt_send_confirmation,   .info = "Send Confirmation" },
+{ .verb = "subscribe",           .callback = subscribe,              .info = "subscribes to the event of 'value'"},
+{ .verb = "unsubscribe",         .callback = unsubscribe,            .info = "unsubscribes to the event of 'value'"},
 
 { } /* marker for end of the array */
 };
