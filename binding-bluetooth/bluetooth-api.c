@@ -384,6 +384,7 @@ static void bt_discovery_result (struct afb_req request)
         return;
     }
 
+    json_object *jresp = json_object_new_object();
     json_object *my_array = json_object_new_array();
 
     tmp = list;
@@ -401,7 +402,9 @@ static void bt_discovery_result (struct afb_req request)
 
     adapter_devices_list_free(list);
 
-    afb_req_success(request, my_array, "BT - Scan Result is Displayed");
+    json_object_object_add(jresp, "list", my_array);
+
+    afb_req_success(request, jresp, "BT - Scan Result is Displayed");
 }
 
 /**/
