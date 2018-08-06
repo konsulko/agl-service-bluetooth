@@ -61,11 +61,9 @@
 
 //remote service
 #define BLUEZ_SERVICE               "org.bluez"
-#define OFONO_SERVICE               "org.ofono"
 #define CLIENT_SERVICE              "org.bluez.obex"
 
 //object path
-#define OFONO_MANAGER_PATH          "/"
 #define BLUEZ_MANAGER_PATH          "/"
 #define AGENT_PATH                  "/org/bluez"
 #define ADAPTER_PATH                "/org/bluez/hci0"
@@ -95,16 +93,6 @@
 #define MEDIA_TRANSPORT_INTERFACE   "org.bluez.MediaTransport"
 #define MEDIA_TRANSPORT1_INTERFACE  "org.bluez.MediaTransport1"
 #define MEDIA_CONTROL1_INTERFACE    "org.bluez.MediaControl1"
-
-
-#define OFONO_HANDSFREE_INTERFACE               "org.ofono.Handsfree"
-#define OFONO_MANAGER_INTERFACE                 "org.ofono.Manager"
-#define OFONO_MODEM_INTERFACE                   "org.ofono.Modem"
-#define OFONO_VOICECALL_INTERFACE               "org.ofono.VoiceCall"
-#define OFONO_VOICECALL_MANAGER_INTERFACE       "org.ofono.VoiceCallManager"
-#define OFONO_NETWORK_REGISTRATION_INTERFACE    "org.ofono.NetworkRegistration"
-#define OFONO_NETWORK_OPERATOR_INTERFACE        "org.ofono.NetworkOperator"
-#define OFONO_CALL_VOLUME_INTERFACE             "org.ofono.CallVolume"
 
 #define FREEDESKTOP_INTROSPECT      "org.freedesktop.DBus.Introspectable"
 #define FREEDESKTOP_PROPERTIES      "org.freedesktop.DBus.Properties"

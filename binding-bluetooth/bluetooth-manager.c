@@ -31,7 +31,6 @@
 
 #include "bluetooth-manager.h"
 #include "bluez-client.h"
-#include "ofono-client.h"
 #include "bluetooth-agent.h"
 
 static Client cli = { 0 };
@@ -785,11 +784,6 @@ int devices_list_update(void)
 
         if (new_device)
         {
-            gchar * ofono_path = g_strconcat("/hfp", new_device->path, NULL);
-            if (ofono_path)
-                new_device->hfpconnected =
-                                    getOfonoModemPoweredByPath(ofono_path);
-
             //BluetoothManage.device = g_slist_prepend(BluetoothManage.device, new_device);
             BluetoothManage.device =
                             g_slist_append(BluetoothManage.device, new_device);
@@ -915,93 +909,6 @@ bluez_device_properties_changed_cb (const gchar *pObjecPath,
 
 }
 
-void ofono_modem_added_cb(struct ofono_modem *modem)
-{
-    struct btd_device * device;
-    gchar *path;
-
-    path = modem->path;
-
-    LOGD("%s\n",path);
-
-    if (NULL == path)
-        return;
-
-    devices_list_lock();
-    device = devices_list_find_device_by_path(path+4);
-
-    if (device)
-    {
-        gboolean old_value = device->hfpconnected;
-
-        device->hfpconnected = modem->powered;
-
-        if ((NULL != g_RegisterCallback.binding_device_properties_changed)
-            && (old_value != device->hfpconnected))
-        {
-            g_RegisterCallback.binding_device_properties_changed(device);
-        }
-    }
-    devices_list_unlock();
-
-}
-
-void ofono_modem_removed_cb(struct ofono_modem *modem)
-{
-    struct btd_device * device;
-    gchar *path = modem->path;
-
-    LOGD("%s\n",path);
-
-    if (NULL == path)
-        return;
-
-    devices_list_lock();
-    device = devices_list_find_device_by_path(path+4);
-
-    if (device)
-    {
-        gboolean old_value = device->hfpconnected;
-
-        device->hfpconnected = FALSE;
-
-        if ((NULL != g_RegisterCallback.binding_device_properties_changed)
-            && (old_value != device->hfpconnected))
-        {
-            g_RegisterCallback.binding_device_properties_changed(device);
-        }
-    }
-    devices_list_unlock();
-}
-
-void ofono_modem_properties_change_cb(struct ofono_modem *modem)
-{
-    struct btd_device * device;
-    gchar *path = modem->path;
-
-    LOGD("%s\n",path);
-
-    if (NULL == path)
-        return;
-
-    devices_list_lock();
-    device = devices_list_find_device_by_path(path+4);
-
-    if (device)
-    {
-        gboolean old_value = device->hfpconnected;
-
-        device->hfpconnected = modem->powered;
-
-        if ((NULL != g_RegisterCallback.binding_device_properties_changed)
-            && (old_value != device->hfpconnected))
-        {
-            g_RegisterCallback.binding_device_properties_changed(device);
-        }
-    }
-    devices_list_unlock();
-}
-
 gboolean agent_requset_confirm( const gchar *device_path,
                                 guint passkey,
                                 const gchar **error)
@@ -1073,13 +980,6 @@ static int bt_manager_app_init(void)
     Bluez_API_Callback.device_properties_changed = bluez_device_properties_changed_cb;
     BluezDeviceAPIRegister(&Bluez_API_Callback);
 
-    Ofono_RegisterCallback_t Ofono_API_Callback;
-    Ofono_API_Callback.modem_added = ofono_modem_added_cb;
-    Ofono_API_Callback.modem_removed = ofono_modem_removed_cb;
-    Ofono_API_Callback.modem_properties_changed = ofono_modem_properties_change_cb;
-    OfonoModemAPIRegister(&Ofono_API_Callback);
-
-
     Agent_RegisterCallback_t AgentRegCallback;
     AgentRegCallback.agent_RequestConfirmation = agent_requset_confirm;
     agent_API_register(&AgentRegCallback);
@@ -1093,22 +993,12 @@ static int bt_manager_app_init(void)
         return -1;
     }
 
-    ret = OfonoManagerInit();
-    if (0 != ret )
-    {
-        LOGE("OfonoManagerInit fail\n");
-
-        BluezManagerQuit();
-        return -1;
-    }
-
     ret = agent_register("");
     if (0 != ret )
     {
         LOGE("agent_register fail\n");
 
         BluezManagerQuit();
-        OfonoManagerQuit();
         return -1;
     }
 
@@ -2004,7 +1894,6 @@ int BluetoothManagerQuit()
         g_main_loop_quit(cli.clientloop);
     }
 
-    OfonoManagerQuit();
     BluezManagerQuit();
     stop_agent();
 

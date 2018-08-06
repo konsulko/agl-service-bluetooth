@@ -26,9 +26,6 @@ PROJECT_TARGET_ADD(bluetooth-binding)
 		bluetooth-manager.c
 		bluetooth-agent.c
 		lib_agent.c
-		ofono-client.c
-		lib_ofono.c
-		lib_ofono_modem.c
 		bluez-client.c
 		lib_bluez.c)
 
