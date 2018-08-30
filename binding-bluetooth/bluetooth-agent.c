@@ -522,6 +522,25 @@ static int create_and_register_agent(const char *capability)
 
     g_variant_unref(value);
 
+    value = g_dbus_connection_call_sync(system_conn, BLUEZ_SERVICE,
+                    AGENT_PATH,   AGENT_MANAGER_INTERFACE,
+                    "RequestDefaultAgent",    g_variant_new("(o)", AGENT_PATH),
+                    NULL,  G_DBUS_CALL_FLAGS_NONE, DBUS_REPLY_TIMEOUT,
+                    NULL, &error);
+
+     if (NULL == value) {
+        LOGE ("RequestDefaultAgent Err: %s", error->message);
+        g_error_free(error);
+
+        g_dbus_interface_skeleton_unexport(
+            G_DBUS_INTERFACE_SKELETON(agnet_interface));
+
+        g_object_unref(system_conn);
+        return -1;
+    }
+
+    g_variant_unref(value);
+
     agent_capability = NULL;
 
     agent_registered = TRUE;
