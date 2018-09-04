@@ -392,7 +392,7 @@ static void bt_discovery_result (struct afb_req request)
         struct btd_device *BDdevice = tmp->data;
         //LOGD("\n%s\t%s\n",BDdevice->bdaddr,BDdevice->name);
 
-        unsigned int filter = BD_ADDER|BD_NAME|BD_PAIRED|BD_ACLCONNECTED|BD_AVCONNECTED|BD_HFPCONNECTED|BD_UUID_PROFILES;
+        unsigned int filter = BD_ADDER|BD_NAME|BD_PATH|BD_PAIRED|BD_ACLCONNECTED|BD_AVCONNECTED|BD_HFPCONNECTED|BD_UUID_PROFILES;
 
         json_object *jresp = new_json_object_from_device(BDdevice, filter);
 
@@ -735,7 +735,7 @@ static void unsubscribe(struct afb_req request)
  */
 void bt_broadcast_device_added(struct btd_device *BDdevice)
 {
-    unsigned int filter = BD_ADDER|BD_NAME|BD_PAIRED|BD_ACLCONNECTED|BD_AVCONNECTED|BD_HFPCONNECTED|BD_UUID_PROFILES;
+    unsigned int filter = BD_ADDER|BD_NAME|BD_PATH|BD_PAIRED|BD_ACLCONNECTED|BD_AVCONNECTED|BD_HFPCONNECTED|BD_UUID_PROFILES;
     int ret;
     json_object *jresp = new_json_object_from_device(BDdevice, filter);
 
@@ -749,7 +749,7 @@ void bt_broadcast_device_added(struct btd_device *BDdevice)
  */
 void bt_broadcast_device_removed(struct btd_device *BDdevice)
 {
-    unsigned int filter = BD_ADDER;
+    unsigned int filter = BD_ADDER|BD_PATH;
     int ret;
     json_object *jresp = new_json_object_from_device(BDdevice, filter);
 
@@ -765,7 +765,7 @@ void bt_broadcast_device_removed(struct btd_device *BDdevice)
 void bt_broadcast_device_properties_change(struct btd_device *BDdevice)
 {
 
-    unsigned int filter = BD_ADDER|BD_NAME|BD_PAIRED|BD_ACLCONNECTED|BD_AVCONNECTED|BD_HFPCONNECTED|BD_AVRCP_TITLE|BD_AVRCP_ARTIST|BD_AVRCP_STATUS|BD_AVRCP_DURATION|BD_AVRCP_POSITION|BD_TRANSPORT_STATE|BD_TRANSPORT_VOLUME|BD_UUID_PROFILES;
+    unsigned int filter = BD_ADDER|BD_NAME|BD_PATH|BD_PAIRED|BD_ACLCONNECTED|BD_AVCONNECTED|BD_HFPCONNECTED|BD_AVRCP_TITLE|BD_AVRCP_ARTIST|BD_AVRCP_STATUS|BD_AVRCP_DURATION|BD_AVRCP_POSITION|BD_TRANSPORT_STATE|BD_TRANSPORT_VOLUME|BD_UUID_PROFILES;
 
     int ret;
     json_object *jresp = new_json_object_from_device(BDdevice, filter);
