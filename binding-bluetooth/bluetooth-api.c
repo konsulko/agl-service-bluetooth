@@ -160,13 +160,17 @@ static json_object *new_json_object_from_device(struct btd_device *BDdevice, uns
     {
         if (BDdevice->path)
         {
+            gchar **str;
+
             jstring = json_object_new_string(BDdevice->path);
+            json_object_object_add(jresp, "Path", jstring);
+
+            str = g_strsplit(BDdevice->path, "/", 0);
+            jstring = json_object_new_string(str[3]);
+            g_strfreev(str);
+
+            json_object_object_add(jresp, "Adapter", jstring);
         }
-        else
-        {
-            jstring = json_object_new_string("");
-        }
-        json_object_object_add(jresp, "Path", jstring);
     }
 
     if (BD_ADDER & filter)
