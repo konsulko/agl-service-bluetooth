@@ -841,6 +841,15 @@ static void bt_send_confirmation(struct afb_req request)
 
 }
 
+static void bt_version(struct afb_req request)
+{
+    json_object *jresp = json_object_new_object();
+
+    json_object_object_add(jresp, "version", json_object_new_string("1.0"));
+
+    afb_req_success(request, jresp, "Bluetooth - Binding version");
+}
+
 /*
  * array of the verbs exported to afb-daemon
  */
@@ -862,6 +871,7 @@ static const struct afb_verb_v2 binding_verbs[]= {
 { .verb = "send_confirmation",   .callback = bt_send_confirmation,   .info = "Send Confirmation" },
 { .verb = "subscribe",           .callback = subscribe,              .info = "subscribes to the event of 'value'"},
 { .verb = "unsubscribe",         .callback = unsubscribe,            .info = "unsubscribes to the event of 'value'"},
+{ .verb = "version",             .callback = bt_version,             .info = "report the binder version API"},
 
 { } /* marker for end of the array */
 };
