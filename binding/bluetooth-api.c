@@ -317,6 +317,7 @@ static void bluez_devices_signal_callback(
 		g_variant_get(parameters, "(&sa{sv}as)", &path, &array, &array1);
 
 		if (!g_strcmp0(path, BLUEZ_DEVICE_INTERFACE)) {
+			int cnt = 0;
 
 			jresp = json_object_new_object();
 
@@ -336,10 +337,19 @@ static void bluez_devices_signal_callback(
 							"devices",
 							key, error->message);
 					g_clear_error(&error);
+					continue;
 				}
+				cnt++;
 			}
 
-			json_object_object_add(jresp, "properties", jobj);
+			// NOTE: Possible to get a changed property for something we don't care about
+			if (cnt > 0) {
+				json_object_object_add(jresp, "properties", jobj);
+			} else {
+				json_object_put(jobj);
+				json_object_put(jresp);
+				jresp = NULL;
+			}
 		}
 
 		g_variant_iter_free(array);
