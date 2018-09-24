@@ -101,7 +101,8 @@ static void handle_method_call(
 
 		jev = json_object_new_object();
 		json_object_object_add(jev, "action", json_object_new_string("request_confirmation"));
-		json_object_object_add(jev, "device", json_object_new_string(path));
+
+		json_process_path(jev, path);
 		json_object_object_add(jev, "pincode", json_object_new_int(pin));
 
 		cw->agent_data.pin_code = pin;

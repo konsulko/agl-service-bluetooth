@@ -110,6 +110,8 @@ gchar *key_dbus_to_json(const gchar *key, gboolean auto_lower);
 json_object *simple_gvariant_to_json(GVariant *var, json_object *parent,
 		gboolean recurse);
 
+void json_process_path(json_object *jresp, const char *path);
+
 /**
  * Structure for converting from dbus properties to json
  * and vice-versa.

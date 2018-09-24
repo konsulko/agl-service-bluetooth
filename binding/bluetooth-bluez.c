@@ -372,22 +372,28 @@ json_object *bluez_get_properties(struct bluetooth_state *ns,
 
 			while (g_variant_iter_loop(array2, "{&sa{sv}}", &interface, &array3)) {
 				json_object *array = NULL;
+				gchar *tmp = NULL;
+
+				jtype = json_object_new_object();
 
 				if (!strcmp(interface, BLUEZ_ADAPTER_INTERFACE)) {
 					access_type = BLUEZ_AT_ADAPTER;
 					array = jarray;
+
+					tmp = bluez_return_adapter(path2);
+					json_object_object_add(jtype, "name", json_object_new_string(tmp));
+					g_free(tmp);
 				} else if (!strcmp(interface, BLUEZ_DEVICE_INTERFACE)) {
 					access_type = BLUEZ_AT_DEVICE;
 					array = jarray2;
+
+					json_process_path(jtype, path2);
 			 	} else {
+					json_object_put(jtype);
 					continue; /* TODO: Maybe display other interfaces */
 				}
 
 				pi = bluez_get_property_info(access_type, error);
-				jtype = json_object_new_object();
-
-				json_object_object_add(jtype, "path",
-						json_object_new_string(path2));
 
 				while (g_variant_iter_loop(array3, "{sv}", &key, &var)) {
 					if (!jprop)

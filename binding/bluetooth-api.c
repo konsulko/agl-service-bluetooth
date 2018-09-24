@@ -262,8 +262,7 @@ static void bluez_devices_signal_callback(
 
 		jresp = json_object_new_object();
 
-		json_object_object_add(jresp, "device",
-				json_object_new_string(path));
+                json_process_path(jresp, path);
 		json_object_object_add(jresp, "action",
 				json_object_new_string("added"));
 
@@ -307,8 +306,7 @@ static void bluez_devices_signal_callback(
 
 		jresp = json_object_new_object();
 
-		json_object_object_add(jresp, "path",
-				json_object_new_string(path));
+                json_process_path(jresp, path);
 		json_object_object_add(jresp, "action",
 				json_object_new_string("removed"));
 
@@ -321,8 +319,7 @@ static void bluez_devices_signal_callback(
 
 			jresp = json_object_new_object();
 
-			json_object_object_add(jresp, "path",
-					json_object_new_string(object_path));
+			json_process_path(jresp, object_path);
 			json_object_object_add(jresp, "action",
 					json_object_new_string("changed"));
 
@@ -609,6 +606,7 @@ static void bluetooth_state(afb_req_t request)
 		afb_req_fail(request, "failed", "No adapter give to return state");
 		return;
 	}
+	adapter = BLUEZ_ROOT_PATH(adapter);
 
 	jresp = adapter_properties(ns, &error, adapter);
 	if (!jresp) {
@@ -631,6 +629,7 @@ static void bluetooth_adapter(afb_req_t request)
 		afb_req_fail(request, "failed", "No adapter given to configure");
 		return;
 	}
+	adapter = BLUEZ_ROOT_PATH(adapter);
 
 	scan = afb_req_value(request, "discovery");
 	if (scan) {

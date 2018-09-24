@@ -1024,3 +1024,15 @@ json_object *get_named_property(const struct property_info *pi,
 
 	return jret;
 }
+
+void json_process_path(json_object *jresp, const char *path) {
+	gchar *tmp;
+
+	tmp = bluez_return_adapter(path);
+	json_object_object_add(jresp, "adapter", json_object_new_string(tmp));
+	g_free(tmp);
+
+	tmp = bluez_return_device(path);
+	json_object_object_add(jresp, "device", json_object_new_string(tmp));
+	g_free(tmp);
+}

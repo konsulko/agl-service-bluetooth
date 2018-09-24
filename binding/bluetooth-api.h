@@ -37,6 +37,18 @@
 #define BLUEZ_OBJECT_PATH			"/"
 #define BLUEZ_PATH				"/org/bluez"
 
+#define BLUEZ_ROOT_PATH(_t) \
+    ({ \
+     const char *__t = (_t); \
+     size_t __len = strlen(BLUEZ_PATH) + 1 + \
+     strlen(__t) + 1; \
+     char *__tpath; \
+     __tpath = alloca(__len + 1 + 1); \
+     snprintf(__tpath, __len + 1, \
+             BLUEZ_PATH "/%s", __t); \
+             __tpath; \
+     })
+
 #define FREEDESKTOP_INTROSPECT			"org.freedesktop.DBus.Introspectable"
 #define FREEDESKTOP_PROPERTIES			"org.freedesktop.DBus.Properties"
 #define FREEDESKTOP_OBJECTMANAGER		"org.freedesktop.DBus.ObjectManager"
@@ -52,7 +64,22 @@
 
 struct bluetooth_state;
 
-static inline const char *bluez_strip_path(const char *path)
+static inline gchar *bluez_return_adapter(const char *path)
+{
+	gchar **strings = g_strsplit(path, "/", -1);
+	gchar *adapter;
+
+	if (g_strv_length(strings) < 3) {
+		g_strfreev(strings);
+		return NULL;
+	}
+	adapter = g_strdup(strings[3]);
+	g_strfreev(strings);
+
+	return adapter;
+}
+
+static inline gchar *bluez_return_device(const char *path)
 {
 	const char *basename;
 
@@ -61,9 +88,8 @@ static inline const char *bluez_strip_path(const char *path)
 		return NULL;
 	basename++;
 	/* at least one character */
-	return *basename ? basename : NULL;
+	return *basename ? g_strdup(basename) : NULL;
 }
-
 
 struct call_work *call_work_create_unlocked(struct bluetooth_state *ns,
 		const char *access_type, const char *type_arg,

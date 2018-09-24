@@ -29,7 +29,7 @@ This verb allows an client to get initial paired devices, and discovered unpaire
   "response": {
     "adapters": [
       {
-        "path": "/org/bluez/hci0",
+        "name": "hci0",
         "properties": {
           "address": "00:1A:7D:DA:71:0F",
           "powered": true,
@@ -56,7 +56,8 @@ This verb allows an client to get initial paired devices, and discovered unpaire
     ],
     "devices": [
       {
-        "path": "/org/bluez/hci0/dev_F8_34_41_DA_BA_46",
+        "adapter": "hci0",
+        "device": "dev_F8_34_41_DA_BA_46",
         "properties": {
           "address": "F8:34:41:DA:BA:46",
           "name": "roguebox",
@@ -91,7 +92,8 @@ This verb allows an client to get initial paired devices, and discovered unpaire
         }
       },
       {
-        "path": "/org/bluez/hci0/dev_67_13_E2_57_29_0F",
+        "adapter": "hci0",
+        "device": "dev_67_13_E2_57_29_0F",
         "properties": {
           "address": "68:13:E2:57:29:0F",
           "alias": "67-13-E2-57-29-0F",
@@ -116,7 +118,7 @@ adapter_state verb allows setting and retrieving of requested adapter settings:
 
 | Name            | Description                                                      |
 |-----------------|------------------------------------------------------------------|
-| adapter         | Must be the bluez path to the adapter (i.e. /org/bluez/hci0)     |
+| adapter         | Must be the name of the adapter (i.e. hci0)                      |
 | discovery       | Discover nearby broadcasting devices                             |
 | discoverable    | Allow other devices to detect this device                        |
 | powered         | Adapter power state (optional, rfkill should be disabled already |
@@ -152,7 +154,8 @@ Sample of discovering a new device event:
 
 <pre>
 {
-  "device": "/org/bluez/hci0/dev_88_0F_10_96_D3_20",
+  "adapter": "hci0",
+  "device": "dev_88_0F_10_96_D3_20",
   "action": "added",
   "properties": {
     "address": "88:0F:10:96:D3:20",
@@ -184,11 +187,12 @@ Sample of discovering a new device event:
 }
 </pre>
 
-Changed status events for a deivce:
+Changed status events for a device:
 
 <pre>
 {
-  "path": "/org/bluez/hci0/dev_88_0F_10_96_D3_20",
+  "adapter": "hci0",
+  "device": "dev_88_0F_10_96_D3_20",
   "action": "changed",
   "properties": {
     "connected": true
@@ -202,8 +206,9 @@ After pairing request agent will send event for a pincode that must be confirmed
 
 <pre>
 {
+  "adapter": "hci0",
+  "device": "dev_88_OF_10_96_D3_20",
   "action": "request_confirmation",
-  "device": "/org/bluez/hci0/dev_88_OF_10_96_D3_20",
   "pincode": 327142
 }
 </pre>
