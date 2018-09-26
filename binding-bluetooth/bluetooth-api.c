@@ -296,8 +296,6 @@ static void bt_power (struct afb_req request)
 
         if (0==ret)
         {
-
-            setHMIStatus(ACTIVE);
             (TRUE==power_value)?json_object_object_add (jresp, "power", json_object_new_string ("on"))
                                 : json_object_object_add (jresp, "power", json_object_new_string ("off"));
         }
@@ -318,7 +316,6 @@ static void bt_power (struct afb_req request)
             return;
         }
         json_object_object_add (jresp, "power", json_object_new_string ("on"));
-        setHMIStatus(ACTIVE);
     }
 
     /* "?value=" parameter is "0" or "false" */
@@ -331,7 +328,6 @@ static void bt_power (struct afb_req request)
         }
 
         json_object_object_add (jresp, "power", json_object_new_string("off"));
-        setHMIStatus(INACTIVE);
     }
     else
     {

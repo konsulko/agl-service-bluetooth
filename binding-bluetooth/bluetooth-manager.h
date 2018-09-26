@@ -162,8 +162,6 @@ typedef struct tagBinding_RegisterCallback
     gboolean (*binding_request_confirmation)(const gchar *device, guint passkey);
 }Binding_RegisterCallback_t;
 
-enum btStates {INACTIVE, ACTIVE};
-
 void DebugTraceSendMsg(int level, gchar* message);
 
 /* ------ PUBLIC PLUGIN FUNCTIONS --------- */
@@ -189,8 +187,6 @@ int device_call_avrcp_method(const gchar* device, const gchar* method);
 int device_priority_list(void *(object_cb)(void *, gchar *), void *ptr);
 
 int adapter_set_property(const gchar* property, gboolean value) ;
-
-GError* setHMIStatus(enum btStates);
 
 #endif
 #endif /* BLUETOOTH_MANAGER_H */
