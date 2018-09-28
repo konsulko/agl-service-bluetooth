@@ -249,9 +249,13 @@ static json_object *new_json_object_from_device(struct btd_device *BDdevice, uns
 
     if (BD_HFPCONNECTED & filter)
     {
-        jstring = (TRUE == BDdevice->hfpconnected) ?
-            json_object_new_string("True"):json_object_new_string("False");
-        json_object_object_add(jresp, "HFPConnected", jstring);
+        gpointer found = NULL;
+
+        if (BDdevice->connected)
+            found = g_list_find_custom(BDdevice->uuids, HFP_UUID, strcmp);
+
+        json_object_object_add(jresp, "HFPConnected",
+                               json_object_new_string(found ? "True": "False"));
     }
 
     if (BD_UUID_PROFILES & filter)

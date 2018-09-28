@@ -50,6 +50,7 @@ typedef struct {
   unsigned int index;       /* currently selected media file       */
 } BtCtxHandleT;
 
+#define HFP_UUID            "0000111f-0000-1000-8000-00805f9b34fb"
 
 #endif /* BLUETOOTH_API_H */
 
