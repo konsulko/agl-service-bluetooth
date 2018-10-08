@@ -611,7 +611,7 @@ static void bluetooth_state(afb_req_t request)
 	jresp = adapter_properties(ns, &error, adapter);
 	if (!jresp) {
 		afb_req_fail_f(request, "failed", "property %s error %s",
-				"State", error->message);
+				"State", BLUEZ_ERRMSG(error));
 		return;
 	}
 
@@ -639,7 +639,7 @@ static void bluetooth_adapter(afb_req_t request)
 		if (!reply) {
 			afb_req_fail_f(request, "failed",
 					"adapter %s method %s error %s",
-					scan, "Scan", error->message);
+					scan, "Scan", BLUEZ_ERRMSG(error));
 			g_error_free(error);
 			return;
 		}
@@ -654,7 +654,7 @@ static void bluetooth_adapter(afb_req_t request)
 		if (!ret) {
 			afb_req_fail_f(request, "failed",
 					"adapter %s set_property %s error %s",
-					adapter, "Discoverable", error->message);
+					adapter, "Discoverable", BLUEZ_ERRMSG(error));
 			g_error_free(error);
 			return;
 		}
@@ -668,7 +668,7 @@ static void bluetooth_adapter(afb_req_t request)
 		if (!ret) {
 			afb_req_fail_f(request, "failed",
 					"adapter %s set_property %s error %s",
-					adapter, "Powered", error->message);
+					adapter, "Powered", BLUEZ_ERRMSG(error));
 			g_error_free(error);
 			return;
 		}

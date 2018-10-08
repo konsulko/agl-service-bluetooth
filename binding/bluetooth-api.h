@@ -49,6 +49,9 @@
              __tpath; \
      })
 
+#define BLUEZ_ERRMSG(error) \
+     (error ? error->message : "unspecified")
+
 #define FREEDESKTOP_INTROSPECT			"org.freedesktop.DBus.Introspectable"
 #define FREEDESKTOP_PROPERTIES			"org.freedesktop.DBus.Properties"
 #define FREEDESKTOP_OBJECTMANAGER		"org.freedesktop.DBus.ObjectManager"
