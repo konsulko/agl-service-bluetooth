@@ -33,14 +33,9 @@ PROJECT_TARGET_ADD(bluetooth-binding)
 	SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
 		PREFIX "libafm-"
 		LABELS "BINDING"
-		LINK_FLAGS ${BINDINGS_LINK_FLAG}
 		OUTPUT_NAME ${TARGET_NAME}
 	)
 
 	# Library dependencies (include updates automatically)
 	TARGET_LINK_LIBRARIES(${TARGET_NAME} ${link_libraries})
-
-	# installation directory
-	INSTALL(TARGETS ${TARGET_NAME}
-		LIBRARY DESTINATION ${BINDINGS_INSTALL_DIR})
 
