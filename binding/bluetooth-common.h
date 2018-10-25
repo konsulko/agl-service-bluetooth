@@ -112,6 +112,8 @@ json_object *simple_gvariant_to_json(GVariant *var, json_object *parent,
 
 void json_process_path(json_object *jresp, const char *path);
 
+gchar *return_bluez_path(afb_req_t request);
+
 /**
  * Structure for converting from dbus properties to json
  * and vice-versa.

@@ -707,11 +707,11 @@ static void bluetooth_connect_device(afb_req_t request)
 {
 	struct bluetooth_state *ns = bluetooth_get_userdata(request);
 	GError *error = NULL;
-	const char *device, *uuid;
+	const char *uuid;
 	struct call_work *cw;
+	gchar *device;
 
-	/* first device */
-	device = afb_req_value(request, "device");
+	device = return_bluez_path(request);
 	if (!device) {
 		afb_req_fail(request, "failed", "No path given");
 		return;
@@ -726,7 +726,7 @@ static void bluetooth_connect_device(afb_req_t request)
 		afb_req_fail_f(request, "failed", "can't queue work %s",
 				error->message);
 		g_error_free(error);
-		return;
+		goto out_free;
 	}
 
 	cw->request = request;
@@ -746,8 +746,12 @@ static void bluetooth_connect_device(afb_req_t request)
 				error->message);
 		call_work_destroy(cw);
 		g_error_free(error);
-		return;
+		/* fall-thru */
 	}
+
+out_free:
+	g_free(device);
+
 }
 
 static void bluetooth_disconnect_device(afb_req_t request)
@@ -756,10 +760,10 @@ static void bluetooth_disconnect_device(afb_req_t request)
 	json_object *jresp;
 	GVariant *reply = NULL;
 	GError *error = NULL;
-	const char *device, *uuid;
+	const char *uuid;
+	gchar *device;
 
-	/* first device */
-	device = afb_req_value(request, "device");
+	device = return_bluez_path(request);
 	if (!device) {
 		afb_req_fail(request, "failed", "No device given to disconnect");
 		return;
@@ -777,6 +781,7 @@ static void bluetooth_disconnect_device(afb_req_t request)
 	if (!reply) {
 		afb_req_fail_f(request, "failed", "Disconnect error %s",
 				error ? error->message : "unspecified");
+		g_free(device);
 		g_error_free(error);
 		return;
 	}
@@ -786,6 +791,8 @@ static void bluetooth_disconnect_device(afb_req_t request)
 	jresp = json_object_new_object();
 	afb_req_success_f(request, jresp, "Device - Bluetooth %s disconnected",
 			device);
+
+	g_free(device);
 }
 
 static void pair_service_callback(void *user_data,
@@ -818,11 +825,10 @@ static void bluetooth_pair_device(afb_req_t request)
 {
 	struct bluetooth_state *ns = bluetooth_get_userdata(request);
 	GError *error = NULL;
-	const char *device;
+	gchar *device;
 	struct call_work *cw;
 
-	/* first device */
-	device = afb_req_value(request, "device");
+	device = return_bluez_path(request);
 	if (!device) {
 		afb_req_fail(request, "failed", "No path given");
 		return;
@@ -834,7 +840,7 @@ static void bluetooth_pair_device(afb_req_t request)
 		afb_req_fail_f(request, "failed", "can't queue work %s",
 				error->message);
 		g_error_free(error);
-		return;
+		goto out_free;
 	}
 
 	cw->request = request;
@@ -848,8 +854,12 @@ static void bluetooth_pair_device(afb_req_t request)
 				error->message);
 		call_work_destroy(cw);
 		g_error_free(error);
-		return;
+		goto out_free;
 	}
+
+out_free:
+	g_free(device);
+
 }
 
 static void bluetooth_cancel_pairing(afb_req_t request)
@@ -936,10 +946,10 @@ static void bluetooth_remove_device(afb_req_t request)
 	GError *error = NULL;
 	GVariant *reply;
 	json_object *jval = NULL;
-	const char *device, *adapter;
+	const char *adapter;
+	gchar *device;
 
-	/* first device */
-	device = afb_req_value(request, "device");
+	device = return_bluez_path(request);
 	if (!device) {
 		afb_req_fail(request, "failed", "No path given");
 		return;
@@ -953,7 +963,7 @@ static void bluetooth_remove_device(afb_req_t request)
 					device, error->message);
 
 		g_error_free(error);
-		return;
+		goto out_free;
 	}
 
 	adapter = json_object_get_string(jval);
@@ -966,15 +976,18 @@ static void bluetooth_remove_device(afb_req_t request)
 					" device %s method %s error %s",
 					device, "RemoveDevice", error->message);
 		g_error_free(error);
-		json_object_put(jval);
-		return;
+		goto out_free;
 	}
 	g_variant_unref(reply);
 
 	afb_req_success_f(request, json_object_new_object(),
 			"Bluetooth - device %s removed", adapter);
-	
-	json_object_put(jval);
+
+out_free:
+	if (!jval)
+		json_object_put(jval);
+	g_free(device);
+
 }
 
 static void bluetooth_version(afb_req_t request)

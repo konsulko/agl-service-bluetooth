@@ -1036,3 +1036,21 @@ void json_process_path(json_object *jresp, const char *path) {
 	json_object_object_add(jresp, "device", json_object_new_string(tmp));
 	g_free(tmp);
 }
+
+gchar *return_bluez_path(afb_req_t request) {
+	const char *adapter, *device;
+
+	adapter = afb_req_value(request, "adapter");
+	if (!adapter) {
+		afb_req_fail(request, "failed", "No adapter parameter");
+		return NULL;
+	}
+
+	device = afb_req_value(request, "device");
+	if (!device) {
+		afb_req_fail(request, "failed", "No device parameter");
+		return NULL;
+	}
+
+	return g_strconcat("/org/bluez/", adapter, "/", device, NULL);
+}
