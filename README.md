@@ -14,10 +14,10 @@ Bluetooth service uses the respective BlueZ package to connect to bluetooth devi
 | adapter_state      | retrieve or change adapter scan settings                | see adapter_state verb section                                          |
 | connect            | connect to already paired device                        | see connect/disconnect verb section                                     |
 | disconnect         | disconnect to already connected device                  | see connect/disconnect verb section                                     |
-| pair               | initialize a pairing request                            | *Request:* {"device":"/org/bluez/hci0/dev_88_0F_10_96_D3_20"}           |
+| pair               | initialize a pairing request                            | *Request:* {"device":"dev_88_0F_10_96_D3_20"}                           |
 | cancel_pairing     | cancel an outgoing pair request                         |                                                                         |
 | confirm_pairing    | confirm incoming/outgoing bluetooth pairing pincode     | *Request:* {"pincode": 31415}                                           |
-| remove_device      | remove already paired device                            | *Request:* {"device": "/org/bluez/hci0/dev/dev_88_0F_10_96_D3_20"}      |
+| remove_device      | remove already paired device                            | *Request:* {"device": "dev_88_0F_10_96_D3_20"}                          |
 
 
 ### managed_objects verb
@@ -131,13 +131,13 @@ NOTE: uuid in this respect is not related to the afb framework but the Bluetooth
 To connect/disconnect using the respective verb with all known and authenticated profiles:
 
 <pre>
-  {"device": "/org/bluez/hci0/dev_88_0F_10_96_D3_20"}
+  {"device": "dev_88_0F_10_96_D3_20"}
 </pre>
 
 To do the same for the respective device, verb, and for singular profile
 
 <pre>
-  {"device": "/org/bluez/hci0/dev_88_0F_10_96_D3_20", "uuid": "0000110e-0000-1000-8000-00805f9b34fb"}
+  {"device": "dev_88_0F_10_96_D3_20", "uuid": "0000110e-0000-1000-8000-00805f9b34fb"}
 </pre>
 
 ## Events
