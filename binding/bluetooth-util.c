@@ -1038,13 +1038,10 @@ void json_process_path(json_object *jresp, const char *path) {
 }
 
 gchar *return_bluez_path(afb_req_t request) {
-	const char *adapter, *device;
+	const char *adapter = afb_req_value(request, "adapter");
+	const char *device;
 
-	adapter = afb_req_value(request, "adapter");
-	if (!adapter) {
-		afb_req_fail(request, "failed", "No adapter parameter");
-		return NULL;
-	}
+	adapter = adapter ? adapter : BLUEZ_DEFAULT_ADAPTER;
 
 	device = afb_req_value(request, "device");
 	if (!device) {

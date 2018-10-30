@@ -65,6 +65,8 @@
 #define BLUEZ_AT_AGENT				"agent"
 #define BLUEZ_AT_AGENTMANAGER			"agent-manager"
 
+#define BLUEZ_DEFAULT_ADAPTER			"hci0"
+
 struct bluetooth_state;
 
 static inline gchar *bluez_return_adapter(const char *path)
