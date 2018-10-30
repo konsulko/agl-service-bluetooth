@@ -116,13 +116,13 @@ This verb allows an client to get initial paired devices, and discovered unpaire
 
 adapter_state verb allows setting and retrieving of requested adapter settings:
 
-| Name            | Description                                                      |
-|-----------------|------------------------------------------------------------------|
-| adapter         | Must be the name of the adapter (i.e. hci0)                      |
-| discovery       | Discover nearby broadcasting devices                             |
-| discoverable    | Allow other devices to detect this device                        |
-| powered         | Adapter power state (optional, rfkill should be disabled already |
-
+| Name            | Description                                                            |
+|-----------------|------------------------------------------------------------------------|
+| adapter         | Must be the name of the adapter (i.e. hci0)                            |
+| discovery       | Discover nearby broadcasting devices                                   |
+| discoverable    | Allow other devices to detect this device                              |
+| powered         | Adapter power state (optional, rfkill should be disabled already)      |
+| filter          | Display devices only with respective UUIDS listed (write only setting) |
 
 ### connect/disconnect verbs
 

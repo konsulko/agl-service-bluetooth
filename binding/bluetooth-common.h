@@ -114,6 +114,8 @@ void json_process_path(json_object *jresp, const char *path);
 
 gchar *return_bluez_path(afb_req_t request);
 
+gchar **json_array_to_strv(json_object *jobj);
+
 /**
  * Structure for converting from dbus properties to json
  * and vice-versa.

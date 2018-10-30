@@ -147,6 +147,7 @@ void bluez_decode_call_error(struct bluetooth_state *ns,
 
 		} else if (!strcmp(method, "StartDiscovery") ||
 			   !strcmp(method, "StopDiscovery") ||
+			   !strcmp(method, "SetDiscoveryFilter") ||
 			   !strcmp(method, "RegisterAgent")) {
 
 			g_clear_error(error);

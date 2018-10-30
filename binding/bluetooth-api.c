@@ -618,7 +618,7 @@ static void bluetooth_adapter(afb_req_t request)
 	struct bluetooth_state *ns = bluetooth_get_userdata(request);
 	GError *error = NULL;
 	const char *adapter = afb_req_value(request, "adapter");
-	const char *scan, *discoverable, *powered;
+	const char *scan, *discoverable, *powered, *filter;
 
 	adapter = BLUEZ_ROOT_PATH(adapter ? adapter : BLUEZ_DEFAULT_ADAPTER);
 
@@ -663,6 +663,40 @@ static void bluetooth_adapter(afb_req_t request)
 			g_error_free(error);
 			return;
 		}
+	}
+
+	filter = afb_req_value(request, "filter");
+	if (filter) {
+		json_object *jobj = json_tokener_parse(filter);
+		GVariantBuilder builder;
+		GVariant *flt, *reply;
+		gchar **uuid = NULL;
+
+		if (json_object_get_type(jobj) != json_type_array) {
+			afb_req_fail_f(request, "failed", "invalid discovery filter");
+			return;
+		}
+
+		g_variant_builder_init(&builder, G_VARIANT_TYPE("a{sv}"));
+
+		uuid = json_array_to_strv(jobj);
+		g_variant_builder_add(&builder, "{sv}", "UUIDs",
+				      g_variant_new_strv((const gchar * const *) uuid, -1));
+		flt = g_variant_builder_end(&builder);
+
+		reply = adapter_call(ns, adapter, "SetDiscoveryFilter",
+				     g_variant_new("(@a{sv})", flt), &error);
+
+		g_strfreev(uuid);
+
+		if (!reply) {
+			afb_req_fail_f(request, "failed",
+					"adapter %s SetDiscoveryFilter error %s",
+					adapter, BLUEZ_ERRMSG(error));
+			g_error_free(error);
+			return;
+		}
+		g_variant_unref(reply);
 	}
 
 	bluetooth_state(request);

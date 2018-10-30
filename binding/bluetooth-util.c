@@ -1051,3 +1051,18 @@ gchar *return_bluez_path(afb_req_t request) {
 
 	return g_strconcat("/org/bluez/", adapter, "/", device, NULL);
 }
+
+gchar **json_array_to_strv(json_object *jobj)
+{
+	int len = json_object_array_length(jobj);
+	gchar **val = g_malloc0(sizeof(gchar *) * (len + 1));
+	int i;
+
+	for (i = 0; i < len; i++) {
+		json_object *jstr = json_object_array_get_idx(jobj, i);
+		const char *str = json_object_get_string(jstr);
+		val[i] = g_strdup(str);
+	}
+
+	return val;
+}
