@@ -19,17 +19,17 @@
 # Project Info
 # ------------------
 set(PROJECT_NAME agl-service-bluetooth)
-set(PROJECT_VERSION "1.0")
-set(PROJECT_PRETTY_NAME "Bluetooth binding service")
-set(PROJECT_DESCRIPTION "Expose Bluetooth Low Level APIs through AGL Framework")
+set(PROJECT_VERSION "2.0")
+set(PROJECT_PRETTY_NAME "Bluetooth-Manager service")
+set(PROJECT_DESCRIPTION "Interface BlueZ through AGL Framework service")
 set(PROJECT_ICON "icon.png")
-set(PROJECT_AUTHOR "Tasuku Suzuki")
-set(PROJECT_AUTHOR_MAIL "tasuku.suzuki@qt.io")
+set(PROJECT_AUTHOR "Matt Ranostay")
+set(PROJECT_AUTHOR_MAIL "matt.ranostay@konsulko.com")
 set(PROJECT_LICENSE "APL2.0")
 set(PROJECT_LANGUAGES,"C")
+set(API_NAME "Bluetooth-Manager")
 
-# Where are stored the project configuration files
-# relative to the root project directory
+# Where the project configuration files are stored
 set(PROJECT_CMAKE_CONF_DIR "conf.d")
 
 # Where are stored your external libraries for your project. This is 3rd party library that you don't maintain

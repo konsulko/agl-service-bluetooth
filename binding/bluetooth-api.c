@@ -1,0 +1,1034 @@
+/*
+ * Copyright 2018 Konsulko Group
+ * Author: Matt Ranostay <matt.ranostay@konsulko.com>
+ * Author: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <pthread.h>
+#include <semaphore.h>
+
+#include <glib.h>
+#include <stdlib.h>
+#include <gio/gio.h>
+#include <glib-object.h>
+
+#include <json-c/json.h>
+
+#define AFB_BINDING_VERSION 3
+#include <afb/afb-binding.h>
+
+#include "bluetooth-api.h"
+#include "bluetooth-common.h"
+
+/**
+ * The global thread
+ */
+static GThread *global_thread;
+
+static struct bluetooth_state *bluetooth_get_userdata(afb_req_t request) {
+	afb_api_t api = afb_req_get_api(request);
+	return afb_api_get_userdata(api);
+}
+
+void call_work_lock(struct bluetooth_state *ns)
+{
+	g_mutex_lock(&ns->cw_mutex);
+}
+
+void call_work_unlock(struct bluetooth_state *ns)
+{
+	g_mutex_unlock(&ns->cw_mutex);
+}
+
+struct call_work *call_work_lookup_unlocked(
+		struct bluetooth_state *ns,
+		const char *access_type, const char *type_arg,
+		const char *method)
+{
+	struct call_work *cw;
+	GSList *list;
+
+	/* we can only allow a single pending call */
+	for (list = ns->cw_pending; list; list = g_slist_next(list)) {
+		cw = list->data;
+		if (!g_strcmp0(access_type, cw->access_type) &&
+		    !g_strcmp0(type_arg, cw->type_arg) &&
+		    !g_strcmp0(method, cw->method))
+			return cw;
+	}
+	return NULL;
+}
+
+struct call_work *call_work_lookup(
+		struct bluetooth_state *ns,
+		const char *access_type, const char *type_arg,
+		const char *method)
+{
+	struct call_work *cw;
+
+	g_mutex_lock(&ns->cw_mutex);
+	cw = call_work_lookup_unlocked(ns, access_type, type_arg, method);
+	g_mutex_unlock(&ns->cw_mutex);
+
+	return cw;
+}
+
+int call_work_pending_id(
+		struct bluetooth_state *ns,
+		const char *access_type, const char *type_arg,
+		const char *method)
+{
+	struct call_work *cw;
+	int id = -1;
+
+	g_mutex_lock(&ns->cw_mutex);
+	cw = call_work_lookup_unlocked(ns, access_type, type_arg, method);
+	if (cw)
+		id = cw->id;
+	g_mutex_unlock(&ns->cw_mutex);
+
+	return id;
+}
+
+struct call_work *call_work_lookup_by_id_unlocked(
+		struct bluetooth_state *ns, int id)
+{
+	struct call_work *cw;
+	GSList *list;
+
+	/* we can only allow a single pending call */
+	for (list = ns->cw_pending; list; list = g_slist_next(list)) {
+		cw = list->data;
+		if (cw->id == id)
+			return cw;
+	}
+	return NULL;
+}
+
+struct call_work *call_work_lookup_by_id(
+		struct bluetooth_state *ns, int id)
+{
+	struct call_work *cw;
+
+	g_mutex_lock(&ns->cw_mutex);
+	cw = call_work_lookup_by_id_unlocked(ns, id);
+	g_mutex_unlock(&ns->cw_mutex);
+
+	return cw;
+}
+
+struct call_work *call_work_create_unlocked(struct bluetooth_state *ns,
+		const char *access_type, const char *type_arg,
+		const char *method, const char *bluez_method,
+		GError **error)
+{
+
+	struct call_work *cw = NULL;
+
+	cw = call_work_lookup_unlocked(ns, access_type, type_arg, method);
+	if (cw) {
+		g_set_error(error, NB_ERROR, NB_ERROR_CALL_IN_PROGRESS,
+				"another call in progress (%s/%s/%s)",
+				access_type, type_arg, method);
+		return NULL;
+	}
+
+	/* no other pending; allocate */
+	cw = g_malloc0(sizeof(*cw));
+	cw->ns = ns;
+	do {
+		cw->id = ns->next_cw_id;
+		if (++ns->next_cw_id < 0)
+			ns->next_cw_id = 1;
+	} while (call_work_lookup_by_id_unlocked(ns, cw->id));
+
+	cw->access_type = g_strdup(access_type);
+	cw->type_arg = g_strdup(type_arg);
+	cw->method = g_strdup(method);
+	cw->bluez_method = g_strdup(bluez_method);
+
+	ns->cw_pending = g_slist_prepend(ns->cw_pending, cw);
+
+	return cw;
+}
+
+struct call_work *call_work_create(struct bluetooth_state *ns,
+		const char *access_type, const char *type_arg,
+		const char *method, const char *bluez_method,
+		GError **error)
+{
+
+	struct call_work *cw;
+
+	g_mutex_lock(&ns->cw_mutex);
+	cw = call_work_create_unlocked(ns,
+			access_type, type_arg, method, bluez_method,
+			error);
+	g_mutex_unlock(&ns->cw_mutex);
+
+	return cw;
+}
+
+void call_work_destroy_unlocked(struct call_work *cw)
+{
+	struct bluetooth_state *ns = cw->ns;
+	struct call_work *cw2;
+
+	/* verify that it's something we know about */
+	cw2 = call_work_lookup_by_id_unlocked(ns, cw->id);
+	if (cw2 != cw) {
+		AFB_ERROR("Bad call work to destroy");
+		return;
+	}
+
+	/* remove it */
+	ns->cw_pending = g_slist_remove(ns->cw_pending, cw);
+
+	/* agent struct data */
+	g_free(cw->agent_data.device_path);
+
+	g_free(cw->access_type);
+	g_free(cw->type_arg);
+	g_free(cw->method);
+	g_free(cw->bluez_method);
+}
+
+void call_work_destroy(struct call_work *cw)
+{
+	struct bluetooth_state *ns = cw->ns;
+
+	g_mutex_lock(&ns->cw_mutex);
+	call_work_destroy_unlocked(cw);
+	g_mutex_unlock(&ns->cw_mutex);
+}
+
+static afb_event_t get_event_from_value(struct bluetooth_state *ns,
+			const char *value)
+{
+	if (!g_strcmp0(value, "device_changes"))
+		return ns->device_changes_event;
+
+	if (!g_strcmp0(value, "agent"))
+		return ns->agent_event;
+
+	return NULL;
+}
+
+static void bluez_devices_signal_callback(
+	GDBusConnection *connection,
+	const gchar *sender_name,
+	const gchar *object_path,
+	const gchar *interface_name,
+	const gchar *signal_name,
+	GVariant *parameters,
+	gpointer user_data)
+{
+	struct bluetooth_state *ns = user_data;
+	GVariantIter *array1 = NULL;
+	GError *error = NULL;
+	GVariant *var = NULL;
+	const gchar *path = NULL;
+	const gchar *key = NULL;
+	json_object *jresp = NULL, *jobj;
+	GVariantIter *array;
+	gboolean is_config, ret;
+
+	/* AFB_INFO("sender=%s", sender_name);
+	AFB_INFO("object_path=%s", object_path);
+	AFB_INFO("interface=%s", interface_name);
+	AFB_INFO("signal=%s", signal_name); */
+
+	if (!g_strcmp0(signal_name, "InterfacesAdded")) {
+
+		g_variant_get(parameters, "(&oa{sa{sv}})", &path, &array);
+
+		jresp = json_object_new_object();
+
+		json_object_object_add(jresp, "device",
+				json_object_new_string(path));
+		json_object_object_add(jresp, "action",
+				json_object_new_string("added"));
+
+		jobj = json_object_new_object();
+
+		while (g_variant_iter_next(array, "{&s@a{sv}}", &key, &var)) {
+			const char *name = NULL;
+			GVariant *val = NULL;
+
+			if (g_strcmp0(key, BLUEZ_DEVICE_INTERFACE) != 0)
+				continue;
+
+			array1 = g_variant_iter_new(var);
+
+			while (g_variant_iter_next(array1, "{&sv}", &name, &val)) {
+				ret = device_property_dbus2json(jobj,
+					name, val, &is_config, &error);
+				g_variant_unref(val);
+				if (!ret) {
+					AFB_WARNING("%s property %s - %s",
+							"devices",
+							key, error->message);
+					g_clear_error(&error);
+				}
+			}
+			g_variant_iter_free(array1);
+		}
+		g_variant_iter_free(array);
+
+		if (array1) {
+			json_object_object_add(jresp, "properties", jobj);
+		} else {
+			json_object_put(jresp);
+			jresp = NULL;
+		}
+
+	} else if (!g_strcmp0(signal_name, "InterfacesRemoved")) {
+
+		g_variant_get(parameters, "(&oas)", &path, &array);
+		g_variant_iter_free(array);
+
+		jresp = json_object_new_object();
+
+		json_object_object_add(jresp, "path",
+				json_object_new_string(path));
+		json_object_object_add(jresp, "action",
+				json_object_new_string("removed"));
+
+	} else if (!g_strcmp0(signal_name, "PropertiesChanged")) {
+
+		g_variant_get(parameters, "(&sa{sv}as)", &path, &array, &array1);
+
+		if (!g_strcmp0(path, BLUEZ_DEVICE_INTERFACE)) {
+
+			jresp = json_object_new_object();
+
+			json_object_object_add(jresp, "path",
+					json_object_new_string(object_path));
+			json_object_object_add(jresp, "action",
+					json_object_new_string("changed"));
+
+			jobj = json_object_new_object();
+
+			while (g_variant_iter_next(array, "{&sv}", &key, &var)) {
+				ret = device_property_dbus2json(jobj,
+						key, var, &is_config, &error);
+				g_variant_unref(var);
+				if (!ret) {
+					AFB_WARNING("%s property %s - %s",
+							"devices",
+							key, error->message);
+					g_clear_error(&error);
+				}
+			}
+
+			json_object_object_add(jresp, "properties", jobj);
+		}
+
+		g_variant_iter_free(array);
+		g_variant_iter_free(array1);
+	}
+
+	if (jresp) {
+		afb_event_push(ns->device_changes_event, jresp);
+		jresp = NULL;
+	}
+
+	json_object_put(jresp);
+}
+
+static struct bluetooth_state *bluetooth_init(GMainLoop *loop)
+{
+	struct bluetooth_state *ns;
+	GError *error = NULL;
+
+	ns = g_try_malloc0(sizeof(*ns));
+	if (!ns) {
+		AFB_ERROR("out of memory allocating bluetooth state");
+		goto err_no_ns;
+	}
+
+	AFB_INFO("connecting to dbus");
+
+	ns->loop = loop;
+	ns->conn = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, &error);
+	if (!ns->conn) {
+		if (error)
+			g_dbus_error_strip_remote_error(error);
+		AFB_ERROR("Cannot connect to D-Bus, %s",
+				error ? error->message : "unspecified");
+		g_error_free(error);
+		goto err_no_conn;
+
+	}
+
+	AFB_INFO("connected to dbus");
+
+	ns->device_changes_event =
+		afb_daemon_make_event("device_changes");
+	ns->agent_event =
+		afb_daemon_make_event("agent");
+
+	if (!afb_event_is_valid(ns->device_changes_event) ||
+	    !afb_event_is_valid(ns->agent_event)) {
+		AFB_ERROR("Cannot create events");
+		goto err_no_events;
+	}
+
+	ns->device_sub = g_dbus_connection_signal_subscribe(
+			ns->conn,
+			BLUEZ_SERVICE,
+			NULL,   /* interface */
+			NULL,	/* member */
+			NULL,	/* object path */
+			NULL,	/* arg0 */
+			G_DBUS_SIGNAL_FLAGS_NONE,
+			bluez_devices_signal_callback,
+			ns,
+			NULL);
+	if (!ns->device_sub) {
+		AFB_ERROR("Unable to subscribe to interface signals");
+		goto err_no_device_sub;
+	}
+
+	g_mutex_init(&ns->cw_mutex);
+	ns->next_cw_id = 1;
+
+	bluetooth_monitor_init();
+
+	return ns;
+
+err_no_device_sub:
+	/* no way to clear the events */
+err_no_events:
+	g_dbus_connection_close(ns->conn, NULL, NULL, NULL);
+err_no_conn:
+	g_free(ns);
+err_no_ns:
+	return NULL;
+}
+
+static void bluetooth_cleanup(struct bluetooth_state *ns)
+{
+	g_dbus_connection_signal_unsubscribe(ns->conn, ns->device_sub);
+	g_dbus_connection_close(ns->conn, NULL, NULL, NULL);
+	g_free(ns);
+}
+
+static gpointer bluetooth_func(gpointer ptr)
+{
+	struct init_data *id = ptr;
+	struct bluetooth_state *ns;
+	GMainLoop *loop;
+	int rc = 0;
+
+	loop = g_main_loop_new(NULL, FALSE);
+	if (!loop) {
+		AFB_ERROR("Unable to create main loop");
+		goto err_no_loop;
+	}
+
+	/* real bluetooth init */
+	ns = bluetooth_init(loop);
+	if (!ns) {
+		AFB_ERROR("bluetooth_init() failed");
+		goto err_no_ns;
+	}
+
+	id->ns = ns;
+	rc = bluetooth_register_agent(id);
+	if (rc) {
+		AFB_ERROR("bluetooth_register_agent() failed");
+		goto err_no_agent;
+	}
+
+	/* note that we wait for agent registration to signal done */
+
+	afb_api_set_userdata(id->api, ns);
+	g_main_loop_run(loop);
+
+	g_main_loop_unref(ns->loop);
+
+	bluetooth_unregister_agent(ns);
+
+	bluetooth_cleanup(ns);
+	afb_api_set_userdata(id->api, NULL);
+
+	return NULL;
+
+err_no_agent:
+	bluetooth_cleanup(ns);
+
+err_no_ns:
+	g_main_loop_unref(loop);
+
+err_no_loop:
+	signal_init_done(id, -1);
+
+	return NULL;
+}
+
+static int init(afb_api_t api)
+{
+	struct init_data init_data, *id = &init_data;
+	gint64 end_time;
+
+	memset(id, 0, sizeof(*id));
+	id->init_done = FALSE;
+	id->rc = 0;
+	id->api = api;
+	g_cond_init(&id->cond);
+	g_mutex_init(&id->mutex);
+
+	global_thread = g_thread_new("agl-service-bluetooth",
+				bluetooth_func,
+				id);
+
+	AFB_INFO("bluetooth-binding waiting for init done");
+
+	/* wait maximum 10 seconds for init done */
+	end_time = g_get_monotonic_time () + 10 * G_TIME_SPAN_SECOND;
+	g_mutex_lock(&id->mutex);
+	while (!id->init_done) {
+		if (!g_cond_wait_until(&id->cond, &id->mutex, end_time))
+			break;
+	}
+	g_mutex_unlock(&id->mutex);
+
+	if (!id->init_done) {
+		AFB_ERROR("bluetooth-binding init timeout");
+		return -1;
+	}
+
+	if (id->rc)
+		AFB_ERROR("bluetooth-binding init thread returned %d",
+				id->rc);
+	else
+		AFB_INFO("bluetooth-binding operational");
+
+	return id->rc;
+}
+
+static void bluetooth_subscribe_unsubscribe(afb_req_t request,
+		gboolean unsub)
+{
+	struct bluetooth_state *ns = bluetooth_get_userdata(request);
+	json_object *jresp = json_object_new_object();
+	const char *value;
+	afb_event_t event;
+	int rc;
+
+	/* if value exists means to set offline mode */
+	value = afb_req_value(request, "value");
+	if (!value) {
+		afb_req_fail_f(request, "failed", "Missing \"value\" event");
+		return;
+	}
+
+	event = get_event_from_value(ns, value);
+	if (!event) {
+		afb_req_fail_f(request, "failed", "Bad \"value\" event \"%s\"",
+				value);
+		return;
+	}
+
+	if (!unsub)
+		rc = afb_req_subscribe(request, event);
+	else
+		rc = afb_req_unsubscribe(request, event);
+	if (rc != 0) {
+		afb_req_fail_f(request, "failed",
+					"%s error on \"value\" event \"%s\"",
+					!unsub ? "subscribe" : "unsubscribe",
+					value);
+		return;
+	}
+
+	afb_req_success_f(request, jresp, "Bluetooth %s to event \"%s\"",
+			!unsub ? "subscribed" : "unsubscribed",
+			value);
+}
+
+static void bluetooth_subscribe(afb_req_t request)
+{
+	bluetooth_subscribe_unsubscribe(request, FALSE);
+}
+
+static void bluetooth_unsubscribe(afb_req_t request)
+{
+	bluetooth_subscribe_unsubscribe(request, TRUE);
+}
+
+static void bluetooth_list(afb_req_t request)
+{
+	struct bluetooth_state *ns = bluetooth_get_userdata(request);
+	GError *error = NULL;
+	json_object *jresp;
+
+	jresp = object_properties(ns, &error);
+
+	afb_req_success(request, jresp, "Bluetooth - managed objects");
+}
+
+static void bluetooth_state(afb_req_t request)
+{
+	struct bluetooth_state *ns = bluetooth_get_userdata(request);
+	GError *error = NULL;
+	json_object *jresp;
+	const char *adapter;
+
+	adapter = afb_req_value(request, "adapter");
+	if (!adapter) {
+		afb_req_fail(request, "failed", "No adapter give to return state");
+		return;
+	}
+
+	jresp = adapter_properties(ns, &error, adapter);
+	if (!jresp) {
+		afb_req_fail_f(request, "failed", "property %s error %s",
+				"State", error->message);
+		return;
+	}
+
+	afb_req_success(request, jresp, "Bluetooth - adapter state");
+}
+
+static void bluetooth_adapter(afb_req_t request)
+{
+	struct bluetooth_state *ns = bluetooth_get_userdata(request);
+	GError *error = NULL;
+	const char *adapter, *scan, *discoverable, *powered;
+
+	adapter = afb_req_value(request, "adapter");
+	if (!adapter) {
+		afb_req_fail(request, "failed", "No adapter given to configure");
+		return;
+	}
+
+	scan = afb_req_value(request, "discovery");
+	if (scan) {
+		GVariant *reply = adapter_call(ns, adapter, str2boolean(scan) ?
+				"StartDiscovery" : "StopDiscovery", NULL, &error);
+
+		if (!reply) {
+			afb_req_fail_f(request, "failed",
+					"adapter %s method %s error %s",
+					scan, "Scan", error->message);
+			g_error_free(error);
+			return;
+		}
+		g_variant_unref(reply);
+	}
+
+	discoverable = afb_req_value(request, "discoverable");
+	if (discoverable) {
+		int ret = adapter_set_property(ns, adapter, FALSE, "Discoverable",
+				json_object_new_boolean(str2boolean(discoverable)),
+				&error);
+		if (!ret) {
+			afb_req_fail_f(request, "failed",
+					"adapter %s set_property %s error %s",
+					adapter, "Discoverable", error->message);
+			g_error_free(error);
+			return;
+		}
+	}
+
+	powered = afb_req_value(request, "powered");
+	if (powered) {
+		int ret = adapter_set_property(ns, adapter, FALSE, "Powered",
+				json_object_new_boolean(str2boolean(powered)),
+				&error);
+		if (!ret) {
+			afb_req_fail_f(request, "failed",
+					"adapter %s set_property %s error %s",
+					adapter, "Powered", error->message);
+			g_error_free(error);
+			return;
+		}
+	}
+
+	bluetooth_state(request);
+}
+
+static void connect_service_callback(void *user_data,
+		GVariant *result, GError **error)
+{
+	struct call_work *cw = user_data;
+	struct bluetooth_state *ns = cw->ns;
+
+	bluez_decode_call_error(ns,
+		cw->access_type, cw->type_arg, cw->bluez_method,
+		error);
+
+	if (error && *error) {
+		afb_req_fail_f(cw->request, "failed", "Connect error: %s",
+				(*error)->message);
+		goto out_free;
+	}
+
+	if (result)
+		g_variant_unref(result);
+
+	afb_req_success_f(cw->request, NULL, "Bluetooth - device %s connected",
+			cw->type_arg);
+out_free:
+	afb_req_unref(cw->request);
+	call_work_destroy(cw);
+}
+
+static void bluetooth_connect_device(afb_req_t request)
+{
+	struct bluetooth_state *ns = bluetooth_get_userdata(request);
+	GError *error = NULL;
+	const char *device, *uuid;
+	struct call_work *cw;
+
+	/* first device */
+	device = afb_req_value(request, "device");
+	if (!device) {
+		afb_req_fail(request, "failed", "No path given");
+		return;
+	}
+
+	/* optional, connect single profile */
+	uuid = afb_req_value(request, "uuid");
+
+	cw = call_work_create(ns, "device", device,
+			"connect_service", "Connect", &error);
+	if (!cw) {
+		afb_req_fail_f(request, "failed", "can't queue work %s",
+				error->message);
+		g_error_free(error);
+		return;
+	}
+
+	cw->request = request;
+	afb_req_addref(request);
+
+	if (uuid)
+		cw->cpw = bluez_call_async(ns, "device", device,
+			"ConnectProfile", g_variant_new("(&s)", uuid), &error,
+			connect_service_callback, cw);
+	else
+		cw->cpw = bluez_call_async(ns, "device", device,
+			"Connect", NULL, &error,
+			connect_service_callback, cw);
+
+	if (!cw->cpw) {
+		afb_req_fail_f(request, "failed", "connection error %s",
+				error->message);
+		call_work_destroy(cw);
+		g_error_free(error);
+		return;
+	}
+}
+
+static void bluetooth_disconnect_device(afb_req_t request)
+{
+	struct bluetooth_state *ns = bluetooth_get_userdata(request);
+	json_object *jresp;
+	GVariant *reply = NULL;
+	GError *error = NULL;
+	const char *device, *uuid;
+
+	/* first device */
+	device = afb_req_value(request, "device");
+	if (!device) {
+		afb_req_fail(request, "failed", "No device given to disconnect");
+		return;
+	}
+
+	/* optional, disconnect single profile */
+	uuid = afb_req_value(request, "uuid");
+
+	if (uuid)
+		reply = device_call(ns, device, "DisconnectProfile",
+				g_variant_new("(&s)", uuid), &error);
+	else
+		reply = device_call(ns, device, "Disconnect", NULL, &error);
+
+	if (!reply) {
+		afb_req_fail_f(request, "failed", "Disconnect error %s",
+				error ? error->message : "unspecified");
+		g_error_free(error);
+		return;
+	}
+
+	g_variant_unref(reply);
+
+	jresp = json_object_new_object();
+	afb_req_success_f(request, jresp, "Device - Bluetooth %s disconnected",
+			device);
+}
+
+static void pair_service_callback(void *user_data,
+		GVariant *result, GError **error)
+{
+	struct call_work *cw = user_data;
+	struct bluetooth_state *ns = cw->ns;
+
+	bluez_decode_call_error(ns,
+		cw->access_type, cw->type_arg, cw->bluez_method,
+		error);
+
+	if (error && *error) {
+		afb_req_fail_f(cw->request, "failed", "Connect error: %s",
+				(*error)->message);
+		goto out_free;
+	}
+
+	if (result)
+		g_variant_unref(result);
+
+	afb_req_success_f(cw->request, NULL, "Bluetooth - device %s paired",
+			cw->type_arg);
+out_free:
+	afb_req_unref(cw->request);
+	call_work_destroy(cw);
+}
+
+static void bluetooth_pair_device(afb_req_t request)
+{
+	struct bluetooth_state *ns = bluetooth_get_userdata(request);
+	GError *error = NULL;
+	const char *device;
+	struct call_work *cw;
+
+	/* first device */
+	device = afb_req_value(request, "device");
+	if (!device) {
+		afb_req_fail(request, "failed", "No path given");
+		return;
+	}
+
+	cw = call_work_create(ns, "device", device,
+			"pair_device", "Pair", &error);
+	if (!cw) {
+		afb_req_fail_f(request, "failed", "can't queue work %s",
+				error->message);
+		g_error_free(error);
+		return;
+	}
+
+	cw->request = request;
+	afb_req_addref(request);
+
+	cw->cpw = bluez_call_async(ns, "device", device, "Pair", NULL, &error,
+			pair_service_callback, cw);
+
+	if (!cw->cpw) {
+		afb_req_fail_f(request, "failed", "connection error %s",
+				error->message);
+		call_work_destroy(cw);
+		g_error_free(error);
+		return;
+	}
+}
+
+static void bluetooth_cancel_pairing(afb_req_t request)
+{
+	struct bluetooth_state *ns = bluetooth_get_userdata(request);
+	struct call_work *cw;
+	GVariant *reply = NULL;
+	GError *error = NULL;
+	gchar *device;
+
+	call_work_lock(ns);
+
+	cw = call_work_lookup_unlocked(ns, "device", NULL, "RequestConfirmation");
+
+	if (!cw) {
+		call_work_unlock(ns);
+		afb_req_fail(request, "failed", "No pairing in progress");
+		return;
+	}
+
+	device = cw->agent_data.device_path;
+	reply = device_call(ns, device, "CancelPairing", NULL, &error);
+
+	if (!reply) {
+		call_work_unlock(ns);
+		afb_req_fail_f(request, "failed",
+				"device %s method %s error %s",
+				device, "CancelPairing", error->message);
+		return;
+	}
+
+	call_work_unlock(ns);
+
+	afb_req_success(request, json_object_new_object(),
+			"Bluetooth - pairing canceled");
+}
+
+static void bluetooth_confirm_pairing(afb_req_t request)
+{
+	struct bluetooth_state *ns = bluetooth_get_userdata(request);
+	struct call_work *cw;
+	int pin = -1;
+
+	const char *value = afb_req_value(request, "pincode");
+
+	if (value)
+		pin = (int)strtol(value, NULL, 10);	
+
+	if (!value || !pin) {
+		afb_req_fail_f(request, "failed", "No pincode parameter");
+		return;
+	}
+
+	call_work_lock(ns);
+
+	cw = call_work_lookup_unlocked(ns, "device", NULL, "RequestConfirmation");
+
+	if (!cw) {
+		call_work_unlock(ns);
+		afb_req_fail(request, "failed", "No pairing in progress");
+		return;
+	}
+
+	if (pin == cw->agent_data.pin_code) {
+		g_dbus_method_invocation_return_value(cw->invocation, NULL);
+
+		afb_req_success(request, json_object_new_object(),
+				"Bluetooth - pairing confimed");
+	} else {
+		g_dbus_method_invocation_return_dbus_error(cw->invocation,
+				"org.bluez.Error.Rejected",
+				"No connection pending");
+
+		afb_req_fail(request, "failed", "Bluetooth - pairing failed");
+	}
+
+	call_work_destroy_unlocked(cw);
+	call_work_unlock(ns);
+}
+
+static void bluetooth_remove_device(afb_req_t request)
+{
+	struct bluetooth_state *ns = bluetooth_get_userdata(request);
+	GError *error = NULL;
+	GVariant *reply;
+	json_object *jval = NULL;
+	const char *device, *adapter;
+
+	/* first device */
+	device = afb_req_value(request, "device");
+	if (!device) {
+		afb_req_fail(request, "failed", "No path given");
+		return;
+	}
+
+	jval = bluez_get_property(ns, "device", device, FALSE, "Adapter", &error);	
+
+	if (!jval) {
+		afb_req_fail_f(request, "failed",
+					" adapter not found for device %s error %s",
+					device, error->message);
+
+		g_error_free(error);
+		return;
+	}
+
+	adapter = json_object_get_string(jval);
+
+	reply = adapter_call(ns, adapter, "RemoveDevice",
+			     g_variant_new("(o)", device), &error);
+
+	if (!reply) {
+		afb_req_fail_f(request, "failed",
+					" device %s method %s error %s",
+					device, "RemoveDevice", error->message);
+		g_error_free(error);
+		json_object_put(jval);
+		return;
+	}
+	g_variant_unref(reply);
+
+	afb_req_success_f(request, json_object_new_object(),
+			"Bluetooth - device %s removed", adapter);
+	
+	json_object_put(jval);
+}
+
+static const struct afb_verb_v3 bluetooth_verbs[] = {
+	{
+		.verb = "subscribe",
+		.session = AFB_SESSION_NONE,
+		.callback = bluetooth_subscribe,
+		.info = "Subscribe to the event of 'value'",
+	}, {
+		.verb = "unsubscribe",
+		.session = AFB_SESSION_NONE,
+		.callback = bluetooth_unsubscribe,
+		.info = "Unsubscribe to the event of 'value'",
+	}, {
+		.verb = "managed_objects",
+		.session = AFB_SESSION_NONE,
+		.callback = bluetooth_list,
+		.info = "Retrieve managed bluetooth devices"
+	}, {
+		.verb = "adapter_state",
+		.session = AFB_SESSION_NONE,
+		.callback = bluetooth_adapter,
+		.info = "Set adapter mode and retrieve properties"
+	}, {
+		.verb = "connect",
+		.session = AFB_SESSION_NONE,
+		.callback = bluetooth_connect_device,
+		.info = "Connect device and/or profile"
+	}, {
+		.verb = "disconnect",
+		.session = AFB_SESSION_NONE,
+		.callback = bluetooth_disconnect_device,
+		.info = "Disconnect device and/or profile"
+	}, {
+		.verb = "pair",
+		.session = AFB_SESSION_NONE,
+		.callback = bluetooth_pair_device,
+		.info = "Pair device"
+	}, {
+		.verb = "cancel_pairing",
+		.session = AFB_SESSION_NONE,
+		.callback = bluetooth_cancel_pairing,
+		.info = "Cancel pairing"
+	}, {
+		.verb = "confirm_pairing",
+		.session = AFB_SESSION_NONE,
+		.callback = bluetooth_confirm_pairing,
+		.info = "Confirm pairing",
+	}, {
+		.verb = "remove_device",
+		.session = AFB_SESSION_NONE,
+		.callback = bluetooth_remove_device,
+		.info = "Removed paired device",
+	},
+	{ } /* marker for end of the array */
+};
+
+/*
+ * description of the binding for afb-daemon
+ */
+const struct afb_binding_v3 afbBindingV3 = {
+	.api = "bluetooth-manager",
+	.specification = "bluetooth manager API",
+	.verbs = bluetooth_verbs,
+	.init = init,
+};

@@ -18,24 +18,18 @@
 ###########################################################################
 
 # Add target to project dependency list
-PROJECT_TARGET_ADD(bluetooth-binding)
+PROJECT_TARGET_ADD(afm-bluetooth-binding)
 
 	# Define project Targets
-	add_library(${TARGET_NAME} MODULE
-		bluetooth-api.c
-		bluetooth-manager.c
-		bluetooth-agent.c
-		lib_agent.c
-		bluez-client.c
-		lib_bluez.c)
+	add_library(afm-bluetooth-binding MODULE bluetooth-api.c bluetooth-agent.c bluetooth-rfkill.c bluetooth-util.c bluetooth-bluez.c)
 
 	# Binder exposes a unique public entry point
 	SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
-		PREFIX "libafm-"
+		PREFIX "lib"
 		LABELS "BINDING"
+		LINK_FLAGS ${BINDINGS_LINK_FLAG}
 		OUTPUT_NAME ${TARGET_NAME}
 	)
 
 	# Library dependencies (include updates automatically)
 	TARGET_LINK_LIBRARIES(${TARGET_NAME} ${link_libraries})
-
