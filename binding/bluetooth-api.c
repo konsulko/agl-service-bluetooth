@@ -1088,7 +1088,7 @@ static const struct afb_verb_v3 bluetooth_verbs[] = {
  * description of the binding for afb-daemon
  */
 const struct afb_binding_v3 afbBindingV3 = {
-	.api = "bluetooth-manager",
+	.api = "Bluetooth-Manager",
 	.specification = "bluetooth manager API",
 	.verbs = bluetooth_verbs,
 	.init = init,
