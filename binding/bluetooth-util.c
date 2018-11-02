@@ -1039,7 +1039,7 @@ void json_process_path(json_object *jresp, const char *path) {
 
 gchar *return_bluez_path(afb_req_t request) {
 	const char *adapter = afb_req_value(request, "adapter");
-	const char *device;
+	const char *device, *tmp;
 
 	adapter = adapter ? adapter : BLUEZ_DEFAULT_ADAPTER;
 
@@ -1047,6 +1047,16 @@ gchar *return_bluez_path(afb_req_t request) {
 	if (!device) {
 		afb_req_fail(request, "failed", "No device parameter");
 		return NULL;
+	}
+
+	tmp = device;
+
+	/* Stop the dbus call from segfaulting from special characters */
+	for (; *tmp; tmp++) {
+		if (!g_ascii_isalnum(*tmp) && *tmp != '_') {
+			afb_req_fail(request, "failed", "Invalid device parameter");
+			return NULL;
+		}
 	}
 
 	return g_strconcat("/org/bluez/", adapter, "/", device, NULL);
