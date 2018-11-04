@@ -656,6 +656,8 @@ static void bluetooth_adapter(afb_req_t request)
 		int ret = adapter_set_property(ns, adapter, FALSE, "Powered",
 				json_object_new_boolean(str2boolean(powered)),
 				&error);
+		json_object *jresp = NULL;
+
 		if (!ret) {
 			afb_req_fail_f(request, "failed",
 					"adapter %s set_property %s error %s",
@@ -663,6 +665,16 @@ static void bluetooth_adapter(afb_req_t request)
 			g_error_free(error);
 			return;
 		}
+
+		jresp = json_object_new_object();
+
+		json_process_path(jresp, adapter);
+		json_object_object_add(jresp, "action",
+				json_object_new_string("changed"));
+		json_object_object_add(jresp, "powered",
+				json_object_new_boolean(str2boolean(powered)));
+
+		afb_event_push(ns->device_changes_event, jresp);
 	}
 
 	filter = afb_req_value(request, "filter");
