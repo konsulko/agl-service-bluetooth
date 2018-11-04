@@ -92,6 +92,11 @@ static inline gchar *bluez_return_device(const char *path)
 	if (!basename)
 		return NULL;
 	basename++;
+
+	/* be sure it is a bluez path with device */
+	if (strncmp(basename, "dev_", 4))
+		return NULL;
+
 	/* at least one character */
 	return *basename ? g_strdup(basename) : NULL;
 }

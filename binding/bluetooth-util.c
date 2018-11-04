@@ -1033,8 +1033,10 @@ void json_process_path(json_object *jresp, const char *path) {
 	g_free(tmp);
 
 	tmp = bluez_return_device(path);
-	json_object_object_add(jresp, "device", json_object_new_string(tmp));
-	g_free(tmp);
+	if (tmp) {
+		json_object_object_add(jresp, "device", json_object_new_string(tmp));
+		g_free(tmp);
+	}
 }
 
 gchar *return_bluez_path(afb_req_t request) {
