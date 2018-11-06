@@ -518,3 +518,50 @@ gboolean bluez_set_property(struct bluetooth_state *ns,
 
 	return TRUE;
 }
+
+gboolean bluetooth_autoconnect(gpointer data)
+{
+	struct bluetooth_state *ns = data;
+	GError *error = NULL;
+	json_object *jresp, *jobj = NULL;
+        int i;
+
+	jresp = object_properties(ns, &error);
+
+	json_object_object_get_ex(jresp, "devices", &jobj);
+
+        for (i = 0; i < json_object_array_length(jobj); i++) {
+		json_object *idx = json_object_array_get_idx(jobj, i);
+		json_object *props = NULL;
+		json_object_object_get_ex(idx, "properties", &props);
+
+		if (props) {
+			json_object *paired = NULL;
+			json_object_object_get_ex(props, "paired", &paired);
+
+			if (paired && json_object_get_boolean(paired)) {
+				GVariant *reply;
+                                json_object *tmp = NULL;
+				const char *adapter, *device;
+				gchar *path;
+
+                                json_object_object_get_ex(idx, "device", &tmp);
+				device = json_object_get_string(tmp);
+
+                                json_object_object_get_ex(idx, "adapter", &tmp);
+				adapter = json_object_get_string(tmp);
+
+				path = g_strconcat("/org/bluez/", adapter, "/", device, NULL);
+
+				reply = bluez_call(ns, "device", path, "Connect", NULL, NULL);
+				g_free(path);
+
+				if (reply)
+					return FALSE;
+				g_variant_unref(reply);
+			}
+		}
+	}
+
+	return FALSE;
+}

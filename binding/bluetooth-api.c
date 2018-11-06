@@ -420,6 +420,8 @@ static struct bluetooth_state *bluetooth_init(GMainLoop *loop)
 
 	bluetooth_monitor_init();
 
+	g_timeout_add_seconds(5, bluetooth_autoconnect, ns);
+
 	return ns;
 
 err_no_device_sub:

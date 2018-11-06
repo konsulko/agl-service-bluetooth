@@ -142,6 +142,8 @@ gboolean bluez_set_property(struct bluetooth_state *ns,
 		gboolean is_json_name, const char *name, json_object *jval,
 		GError **error);
 
+gboolean bluetooth_autoconnect(gpointer data);
+
 /* convenience access methods */
 static inline gboolean device_property_dbus2json(json_object *jprop,
 		const gchar *key, GVariant *var, gboolean *is_config,
