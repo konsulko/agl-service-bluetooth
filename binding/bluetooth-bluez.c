@@ -155,6 +155,19 @@ void bluez_decode_call_error(struct bluetooth_state *ns,
 					NB_ERROR_UNKNOWN_SERVICE,
 					"unknown service %s",
 					type_arg);
+		} else if (!strcmp(method, "Play") ||
+			   !strcmp(method, "Pause") ||
+			   !strcmp(method, "Stop") ||
+			   !strcmp(method, "Next") ||
+			   !strcmp(method, "Previous") ||
+			   !strcmp(method, "FastForward") ||
+			   !strcmp(method, "Rewind")) {
+
+			g_clear_error(error);
+			g_set_error(error, NB_ERROR,
+					NB_ERROR_UNKNOWN_PROPERTY,
+					"unknown method %s",
+					method);
 		}
 	}
 }
@@ -167,7 +180,8 @@ GVariant *bluez_call(struct bluetooth_state *ns,
 	GVariant *reply;
 
 	if (!path && (!strcmp(access_type, BLUEZ_AT_DEVICE) ||
-			  !strcmp(access_type, BLUEZ_AT_ADAPTER))) {
+			  !strcmp(access_type, BLUEZ_AT_ADAPTER) ||
+			  !strcmp(access_type, BLUEZ_AT_MEDIAPLAYER))) {
 		g_set_error(error, NB_ERROR, NB_ERROR_MISSING_ARGUMENT,
 				"missing %s argument",
 				access_type);
@@ -181,6 +195,8 @@ GVariant *bluez_call(struct bluetooth_state *ns,
 	} else if (!strcmp(access_type, BLUEZ_AT_AGENTMANAGER)) {
 		path = BLUEZ_PATH;
 		interface = BLUEZ_AGENTMANAGER_INTERFACE;
+	} else if (!strcmp(access_type, BLUEZ_AT_MEDIAPLAYER)) {
+		interface = BLUEZ_MEDIAPLAYER_INTERFACE;
 	} else {
 		g_set_error(error, NB_ERROR, NB_ERROR_ILLEGAL_ARGUMENT,
 				"illegal %s argument",

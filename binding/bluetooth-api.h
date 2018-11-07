@@ -33,6 +33,7 @@
 #define BLUEZ_AGENT_INTERFACE			BLUEZ_SERVICE ".Agent1"
 #define BLUEZ_AGENTMANAGER_INTERFACE		BLUEZ_SERVICE ".AgentManager1"
 #define BLUEZ_DEVICE_INTERFACE			BLUEZ_SERVICE ".Device1"
+#define BLUEZ_MEDIAPLAYER_INTERFACE		BLUEZ_SERVICE ".MediaPlayer1"
 
 #define BLUEZ_OBJECT_PATH			"/"
 #define BLUEZ_PATH				"/org/bluez"
@@ -64,6 +65,7 @@
 #define BLUEZ_AT_DEVICE				"device"
 #define BLUEZ_AT_AGENT				"agent"
 #define BLUEZ_AT_AGENTMANAGER			"agent-manager"
+#define BLUEZ_AT_MEDIAPLAYER			"mediaplayer"
 
 #define BLUEZ_DEFAULT_ADAPTER			"hci0"
 
@@ -184,6 +186,14 @@ static inline GVariant *agentmanager_call(struct bluetooth_state *ns,
 			method, params, error);
 }
 
+static inline GVariant *mediaplayer_call(struct bluetooth_state *ns,
+		const char *player, const char *method,
+		GVariant *params, GError **error)
+{
+	return bluez_call(ns, BLUEZ_AT_MEDIAPLAYER, player,
+			method, params, error);
+}
+
 static inline gboolean adapter_set_property(struct bluetooth_state *ns,
 		const char *adapter, gboolean is_json_name, const char *name,
 		json_object *jval, GError **error)
@@ -234,5 +244,7 @@ void bluez_decode_call_error(struct bluetooth_state *ns,
 		const char *access_type, const char *type_arg,
 		const char *method,
 		GError **error);
+
+
 
 #endif /* BLUETOOTH_API_H */

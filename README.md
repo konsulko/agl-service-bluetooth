@@ -12,6 +12,7 @@ Bluetooth service uses the respective BlueZ package to connect to bluetooth devi
 | unsubscribe        | unsubscribe to bluetooth events                         | *Request:* {"value": "device_changes"}                                  |
 | managed_objects    | retrieve managed bluetooth devices                      | see managed_objects verb section                                        |
 | adapter_state      | retrieve or change adapter scan settings                | see adapter_state verb section                                          |
+| avrcp_controls     | avrcp controls for MediaPlayer1 playback                | see avrcp_controls verb section                                         |
 | connect            | connect to already paired device                        | see connect/disconnect verb section                                     |
 | disconnect         | disconnect to already connected device                  | see connect/disconnect verb section                                     |
 | pair               | initialize a pairing request                            | *Request:* {"device":"dev_88_0F_10_96_D3_20"}                           |
@@ -123,6 +124,16 @@ adapter_state verb allows setting and retrieving of requested adapter settings:
 | discoverable    | Allow other devices to detect this device                              |
 | powered         | Adapter power state (optional, rfkill should be disabled already)      |
 | filter          | Display devices only with respective UUIDS listed (write only setting) |
+
+#### avrcp_controls verb
+
+avrcp_controls verb allow controlling the playback of the defined device
+
+| Name            | Description                                                                                  |
+|-----------------|----------------------------------------------------------------------------------------------|
+| adapter         | Name of the adapter (i.e. hci0)                                                              |
+| device          | Must be the name of the device (i.e. dev_88_0F_10_96_D3_20)                                  |
+| action          | Playback control action to take (e.g Play, Pause, Stop, Next, Previous, FastForward, Rewind) |
 
 ### connect/disconnect verbs
 

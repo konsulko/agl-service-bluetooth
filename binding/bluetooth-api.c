@@ -1029,6 +1029,44 @@ out_free:
 
 }
 
+static void bluetooth_avrcp_controls(afb_req_t request)
+{
+	struct bluetooth_state *ns = bluetooth_get_userdata(request);
+	const char *action = afb_req_value(request, "action");
+	gchar *device, *player;
+	GVariant *reply;
+	GError *error = NULL;
+
+	if (!action) {
+		afb_req_fail(request, "failed", "No action given");
+		return;
+	}
+
+	device = return_bluez_path(request);
+	if (!device) {
+		afb_req_fail(request, "failed", "No path given");
+		return;
+	}
+
+	/* TODO: handle multiple players per device */
+	player = g_strconcat(device, "/player0", NULL);
+	g_free(device);
+
+	reply = mediaplayer_call(ns, player, action, NULL, &error);
+
+	if (!reply) {
+		afb_req_fail_f(request, "failed",
+				"mediaplayer %s method %s error %s",
+				player, action, BLUEZ_ERRMSG(error));
+		g_free(player);
+		g_error_free(error);
+		return;
+	}
+
+	g_free(player);
+	afb_req_success(request, NULL, "Bluetooth - AVRCP controls");
+}
+
 static void bluetooth_version(afb_req_t request)
 {
 	json_object *jresp = json_object_new_object();
@@ -1089,6 +1127,11 @@ static const struct afb_verb_v3 bluetooth_verbs[] = {
 		.session = AFB_SESSION_NONE,
 		.callback = bluetooth_remove_device,
 		.info = "Removed paired device",
+	}, {
+		.verb = "avrcp_controls",
+		.session = AFB_SESSION_NONE,
+		.callback = bluetooth_avrcp_controls,
+		.info = "AVRCP controls"
 	}, {
 		.verb = "version",
 		.session = AFB_SESSION_NONE,
