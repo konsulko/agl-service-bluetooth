@@ -58,6 +58,13 @@ void call_work_unlock(struct bluetooth_state *ns)
 	g_mutex_unlock(&ns->cw_mutex);
 }
 
+static void mediaplayer1_set_path(struct bluetooth_state *ns, const char *path)
+{
+	if (ns->mediaplayer_path)
+		g_free(ns->mediaplayer_path);
+	ns->mediaplayer_path = g_strdup(path);
+}
+
 struct call_work *call_work_lookup_unlocked(
 		struct bluetooth_state *ns,
 		const char *access_type, const char *type_arg,
@@ -226,6 +233,9 @@ static afb_event_t get_event_from_value(struct bluetooth_state *ns,
 	if (!g_strcmp0(value, "device_changes"))
 		return ns->device_changes_event;
 
+	if (!g_strcmp0(value, "media"))
+		return ns->media_event;
+
 	if (!g_strcmp0(value, "agent"))
 		return ns->agent_event;
 
@@ -248,8 +258,9 @@ static void bluez_devices_signal_callback(
 	const gchar *path = NULL;
 	const gchar *key = NULL;
 	json_object *jresp = NULL, *jobj;
-	GVariantIter *array;
+	GVariantIter *array = NULL;
 	gboolean is_config, ret;
+	afb_event_t event = ns->device_changes_event;
 
 	/* AFB_INFO("sender=%s", sender_name);
 	AFB_INFO("object_path=%s", object_path);
@@ -263,8 +274,6 @@ static void bluez_devices_signal_callback(
 		jresp = json_object_new_object();
 
                 json_process_path(jresp, path);
-		json_object_object_add(jresp, "action",
-				json_object_new_string("added"));
 
 		jobj = json_object_new_object();
 
@@ -293,7 +302,16 @@ static void bluez_devices_signal_callback(
 		g_variant_iter_free(array);
 
 		if (array1) {
+			json_object_object_add(jresp, "action",
+				json_object_new_string("added"));
 			json_object_object_add(jresp, "properties", jobj);
+		} else if (is_mediaplayer1_interface(path) &&
+				g_str_has_suffix(path, BLUEZ_DEFAULT_PLAYER)) {
+
+			json_object_object_add(jresp, "connected",
+				json_object_new_boolean(TRUE));
+			mediaplayer1_set_path(ns, path);
+			event = ns->media_event;
 		} else {
 			json_object_put(jresp);
 			jresp = NULL;
@@ -305,10 +323,20 @@ static void bluez_devices_signal_callback(
 		g_variant_iter_free(array);
 
 		jresp = json_object_new_object();
+		json_process_path(jresp, path);
 
-                json_process_path(jresp, path);
-		json_object_object_add(jresp, "action",
+		if (is_mediaplayer1_interface(path)) {
+			json_object_object_add(jresp, "connected",
+				json_object_new_boolean(FALSE));
+			mediaplayer1_set_path(ns, NULL);
+			event = ns->media_event;
+		} else if (split_length(path) == 5) {
+			json_object_object_add(jresp, "action",
 				json_object_new_string("removed"));
+		} else {
+			json_object_put(jresp);
+			jresp = NULL;
+		}
 
 	} else if (!g_strcmp0(signal_name, "PropertiesChanged")) {
 
@@ -347,6 +375,33 @@ static void bluez_devices_signal_callback(
 				json_object_put(jresp);
 				jresp = NULL;
 			}
+
+		} else if (!g_strcmp0(path, BLUEZ_MEDIAPLAYER_INTERFACE)) {
+			int cnt = 0;
+			jresp = json_object_new_object();
+			json_process_path(jresp, object_path);
+
+			while (g_variant_iter_next(array, "{&sv}", &key, &var)) {
+				ret = mediaplayer_property_dbus2json(jresp,
+						key, var, &is_config, &error);
+				g_variant_unref(var);
+				if (!ret) {
+					//AFB_WARNING("%s property %s - %s",
+					//		"mediaplayer",
+					//		key, error->message);
+					g_clear_error(&error);
+					continue;
+				}
+				cnt++;
+			}
+
+			// NOTE: Possible to get a changed property for something we don't care about
+			if (!cnt) {
+				json_object_put(jresp);
+				jresp = NULL;
+			}
+
+			event = ns->media_event;
 		}
 
 		g_variant_iter_free(array);
@@ -354,7 +409,7 @@ static void bluez_devices_signal_callback(
 	}
 
 	if (jresp) {
-		afb_event_push(ns->device_changes_event, jresp);
+		afb_event_push(event, jresp);
 		jresp = NULL;
 	}
 
@@ -390,10 +445,13 @@ static struct bluetooth_state *bluetooth_init(GMainLoop *loop)
 
 	ns->device_changes_event =
 		afb_daemon_make_event("device_changes");
+	ns->media_event =
+		afb_daemon_make_event("media");
 	ns->agent_event =
 		afb_daemon_make_event("agent");
 
 	if (!afb_event_is_valid(ns->device_changes_event) ||
+	    !afb_event_is_valid(ns->media_event) ||
 	    !afb_event_is_valid(ns->agent_event)) {
 		AFB_ERROR("Cannot create events");
 		goto err_no_events;
@@ -535,6 +593,24 @@ static int init(afb_api_t api)
 	return id->rc;
 }
 
+static void mediaplayer1_send_event(struct bluetooth_state *ns)
+{
+	gchar *player = g_strdup(ns->mediaplayer_path);
+	json_object *jresp = mediaplayer_properties(ns, NULL, player);
+
+	if (!jresp)
+		goto out_err;
+
+	json_process_path(jresp, player);
+	json_object_object_add(jresp, "connected",
+			json_object_new_boolean(TRUE));
+
+	afb_event_push(ns->media_event, jresp);
+
+out_err:
+	g_free(player);
+}
+
 static void bluetooth_subscribe_unsubscribe(afb_req_t request,
 		gboolean unsub)
 {
@@ -558,10 +634,14 @@ static void bluetooth_subscribe_unsubscribe(afb_req_t request,
 		return;
 	}
 
-	if (!unsub)
+	if (!unsub) {
 		rc = afb_req_subscribe(request, event);
-	else
+
+		if (!g_strcmp0(value, "media"))
+			mediaplayer1_send_event(ns);
+	} else {
 		rc = afb_req_unsubscribe(request, event);
+	}
 	if (rc != 0) {
 		afb_req_fail_f(request, "failed",
 					"%s error on \"value\" event \"%s\"",
@@ -1043,14 +1123,18 @@ static void bluetooth_avrcp_controls(afb_req_t request)
 	}
 
 	device = return_bluez_path(request);
-	if (!device) {
+	if (device) {
+		/* TODO: handle multiple players per device */
+		player = g_strconcat(device, "/", BLUEZ_DEFAULT_PLAYER, NULL);
+		g_free(device);
+	} else {
+		player = g_strdup(ns->mediaplayer_path);
+	}
+
+	if (!player) {
 		afb_req_fail(request, "failed", "No path given");
 		return;
 	}
-
-	/* TODO: handle multiple players per device */
-	player = g_strconcat(device, "/player0", NULL);
-	g_free(device);
 
 	reply = mediaplayer_call(ns, player, action, NULL, &error);
 

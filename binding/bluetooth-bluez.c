@@ -72,6 +72,26 @@ static const struct property_info device_props[] = {
 	{ },
 };
 
+static const struct property_info mediaplayer_props[] = {
+	{ .name = "Position",		.fmt = "u", },
+	{ .name = "Status",		.fmt = "s", },
+	{
+		.name	= "Track",
+		.fmt	= "{sv}",
+		.sub	= (const struct property_info []) {
+			{ .name = "Title",	.fmt = "s", },
+			{ .name = "Artist",	.fmt = "s", },
+			{ .name = "Album",	.fmt = "s", },
+			{ .name = "Genre",	.fmt = "s", },
+			{ .name = "NumberOfTracks",	.fmt = "u", },
+			{ .name = "TrackNumber",	.fmt = "u", },
+			{ .name = "Duration",	.fmt = "u", },
+			{ },
+		},
+	},
+	{ },
+};
+
 const struct property_info *bluez_get_property_info(
 		const char *access_type, GError **error)
 {
@@ -81,6 +101,8 @@ const struct property_info *bluez_get_property_info(
 		pi = adapter_props;
 	else if (!strcmp(access_type, BLUEZ_AT_DEVICE))
 		pi = device_props;
+	else if (!strcmp(access_type, BLUEZ_AT_MEDIAPLAYER))
+		pi = mediaplayer_props;
 	else
 		g_set_error(error, NB_ERROR, NB_ERROR_ILLEGAL_ARGUMENT,
 				"illegal %s argument", access_type);
@@ -324,6 +346,7 @@ json_object *bluez_get_properties(struct bluetooth_state *ns,
 	gboolean is_config;
 
 	if (!strcmp(access_type, BLUEZ_AT_DEVICE) ||
+	    !strcmp(access_type, BLUEZ_AT_MEDIAPLAYER) ||
 	    !strcmp(access_type, BLUEZ_AT_ADAPTER)) {
 
 		pi = bluez_get_property_info(access_type, error);
@@ -341,6 +364,8 @@ json_object *bluez_get_properties(struct bluetooth_state *ns,
 
 	if (!strcmp(access_type, BLUEZ_AT_DEVICE))
 		interface2 = BLUEZ_DEVICE_INTERFACE;
+	else if (!strcmp(access_type, BLUEZ_AT_MEDIAPLAYER))
+		interface2 = BLUEZ_MEDIAPLAYER_INTERFACE;
 	else if (!strcmp(access_type, BLUEZ_AT_ADAPTER))
 		interface2 = BLUEZ_ADAPTER_INTERFACE;
 	else if (!strcmp(access_type, BLUEZ_AT_OBJECT))
@@ -365,6 +390,7 @@ json_object *bluez_get_properties(struct bluetooth_state *ns,
 		return NULL;
 
 	if (!strcmp(access_type, BLUEZ_AT_DEVICE) ||
+	    !strcmp(access_type, BLUEZ_AT_MEDIAPLAYER) ||
 	    !strcmp(access_type, BLUEZ_AT_ADAPTER)) {
 		jprop = json_object_new_object();
 		g_variant_get(reply, "(a{sv})", &array);

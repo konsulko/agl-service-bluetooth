@@ -41,6 +41,7 @@ struct bluetooth_state {
 	guint autoconnect_sub;
 
 	afb_event_t device_changes_event;
+	afb_event_t media_event;
 	afb_event_t agent_event;
 
 	/* NOTE: single connection allowed for now */
@@ -56,6 +57,9 @@ struct bluetooth_state {
 	guint registration_id;
 	gchar *agent_path;
 	gboolean agent_registered;
+
+	/* mediaplayer */
+	gchar *mediaplayer_path;
 };
 
 struct init_data {

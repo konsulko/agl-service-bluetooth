@@ -1046,10 +1046,8 @@ gchar *return_bluez_path(afb_req_t request) {
 	adapter = adapter ? adapter : BLUEZ_DEFAULT_ADAPTER;
 
 	device = afb_req_value(request, "device");
-	if (!device) {
-		afb_req_fail(request, "failed", "No device parameter");
+	if (!device)
 		return NULL;
-	}
 
 	tmp = device;
 

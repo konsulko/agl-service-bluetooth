@@ -156,6 +156,7 @@ To do the same for the respective device, verb, and for singular profile
 | Name              | Description                              | JSON Event Data                           |
 |-------------------|------------------------------------------|-------------------------------------------|
 | device_changes    | report on bluetooth devices              | see device_changes event section          |
+| media             | report on MediaPlayer1 events            | see media event section                   |
 | agent             | PIN from BlueZ agent for confirmation    | see agent event section                   |
 
 
@@ -210,6 +211,30 @@ Changed status events for a device:
   }
 }
 </pre>
+
+### media event
+
+Playing audio reporting event (not all fields will be passed in every event):
+
+<pre>
+{
+        "adapter": "hci0",
+        "device": "dev_D0_81_7A_5A_BC_5E",
+        "track": {
+                "title": "True Colors",
+                "duration": 228000,
+                "album": "True Colors",
+                "tracknumber": 6,
+                "artist": "Zedd",
+                "numberoftracks": 11,
+                "genre": "Dance & DJ/General"
+        },
+        "position": 5600,
+        "status": "playing"
+        "connected": false
+}
+</pre>
+
 
 ### agent event
 
