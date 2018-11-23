@@ -1040,10 +1040,13 @@ void json_process_path(json_object *jresp, const char *path) {
 }
 
 gchar *return_bluez_path(afb_req_t request) {
+	struct bluetooth_state *ns = bluetooth_get_userdata(request);
 	const char *adapter = afb_req_value(request, "adapter");
 	const char *device, *tmp;
 
-	adapter = adapter ? adapter : BLUEZ_DEFAULT_ADAPTER;
+	call_work_lock(ns);
+	adapter = adapter ? adapter : ns->default_adapter;
+	call_work_unlock(ns);
 
 	device = afb_req_value(request, "device");
 	if (!device)

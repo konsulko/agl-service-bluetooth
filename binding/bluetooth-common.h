@@ -60,6 +60,9 @@ struct bluetooth_state {
 
 	/* mediaplayer */
 	gchar *mediaplayer_path;
+
+	/* adapter */
+	gchar *default_adapter;
 };
 
 struct init_data {
@@ -98,6 +101,11 @@ int bluetooth_monitor_init(void);
 int bluetooth_register_agent(struct init_data *id);
 
 void bluetooth_unregister_agent(struct bluetooth_state *ns);
+
+/* conf methods in bluetooth-conf.c */
+
+gchar *get_default_adapter(afb_api_t api);
+int set_default_adapter(afb_api_t api, const char *adapter);
 
 /* utility methods in bluetooth-util.c */
 

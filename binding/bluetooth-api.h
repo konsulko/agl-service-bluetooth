@@ -40,6 +40,7 @@
 
 #define BLUEZ_ROOT_PATH(_t) \
     ({ \
+     call_work_lock(ns); \
      const char *__t = (_t); \
      size_t __len = strlen(BLUEZ_PATH) + 1 + \
      strlen(__t) + 1; \
@@ -47,6 +48,7 @@
      __tpath = alloca(__len + 1 + 1); \
      snprintf(__tpath, __len + 1, \
              BLUEZ_PATH "/%s", __t); \
+     call_work_unlock(ns); \
              __tpath; \
      })
 
@@ -119,6 +121,8 @@ static inline gboolean is_mediaplayer1_interface(const char *path)
 
 	return ret;
 }
+
+struct bluetooth_state *bluetooth_get_userdata(afb_req_t request);
 
 struct call_work *call_work_create_unlocked(struct bluetooth_state *ns,
 		const char *access_type, const char *type_arg,

@@ -12,6 +12,7 @@ Bluetooth service uses the respective BlueZ package to connect to bluetooth devi
 | unsubscribe        | unsubscribe to bluetooth events                         | *Request:* {"value": "device_changes"}                                  |
 | managed_objects    | retrieve managed bluetooth devices                      | see managed_objects verb section                                        |
 | adapter_state      | retrieve or change adapter scan settings                | see adapter_state verb section                                          |
+| default_adapter    | retrieve or change default adapter setting              | *Request:* {"adapter": "hci1"}                                          |
 | avrcp_controls     | avrcp controls for MediaPlayer1 playback                | see avrcp_controls verb section                                         |
 | connect            | connect to already paired device                        | see connect/disconnect verb section                                     |
 | disconnect         | disconnect to already connected device                  | see connect/disconnect verb section                                     |

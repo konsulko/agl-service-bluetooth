@@ -43,7 +43,7 @@
  */
 static GThread *global_thread;
 
-static struct bluetooth_state *bluetooth_get_userdata(afb_req_t request) {
+struct bluetooth_state *bluetooth_get_userdata(afb_req_t request) {
 	afb_api_t api = afb_req_get_api(request);
 	return afb_api_get_userdata(api);
 }
@@ -575,6 +575,7 @@ static int init(afb_api_t api)
 {
 	struct init_data init_data, *id = &init_data;
 	gint64 end_time;
+	int ret;
 
 	memset(id, 0, sizeof(*id));
 	id->init_done = FALSE;
@@ -582,6 +583,12 @@ static int init(afb_api_t api)
 	id->api = api;
 	g_cond_init(&id->cond);
 	g_mutex_init(&id->mutex);
+
+	ret = afb_daemon_require_api("persistence", 1);
+	if (ret < 0) {
+		AFB_ERROR("Cannot request data persistence service");
+		return ret;
+	}
 
 	global_thread = g_thread_new("agl-service-bluetooth",
 				bluetooth_func,
@@ -608,6 +615,8 @@ static int init(afb_api_t api)
 				id->rc);
 	else
 		AFB_INFO("bluetooth-binding operational");
+
+	id->ns->default_adapter = get_default_adapter(id->api);
 
 	return id->rc;
 }
@@ -702,7 +711,7 @@ static void bluetooth_state(afb_req_t request)
 	json_object *jresp;
 	const char *adapter = afb_req_value(request, "adapter");
 
-	adapter = BLUEZ_ROOT_PATH(adapter ? adapter : BLUEZ_DEFAULT_ADAPTER);
+	adapter = BLUEZ_ROOT_PATH(adapter ? adapter : ns->default_adapter);
 
 	jresp = adapter_properties(ns, &error, adapter);
 	if (!jresp) {
@@ -721,7 +730,7 @@ static void bluetooth_adapter(afb_req_t request)
 	const char *adapter = afb_req_value(request, "adapter");
 	const char *scan, *discoverable, *powered, *filter;
 
-	adapter = BLUEZ_ROOT_PATH(adapter ? adapter : BLUEZ_DEFAULT_ADAPTER);
+	adapter = BLUEZ_ROOT_PATH(adapter ? adapter : ns->default_adapter);
 
 	scan = afb_req_value(request, "discovery");
 	if (scan) {
@@ -813,6 +822,27 @@ static void bluetooth_adapter(afb_req_t request)
 	}
 
 	bluetooth_state(request);
+}
+
+static void bluetooth_default_adapter(afb_req_t request)
+{
+	struct bluetooth_state *ns = bluetooth_get_userdata(request);
+	const char *adapter = afb_req_value(request, "adapter");
+	json_object *jresp = json_object_new_object();
+
+	call_work_lock(ns);
+	if (adapter) {
+		set_default_adapter(afb_req_get_api(request), adapter);
+
+		if (ns->default_adapter)
+			g_free(ns->default_adapter);
+		ns->default_adapter = g_strdup(adapter);
+	}
+
+	json_object_object_add(jresp, "adapter", json_object_new_string(ns->default_adapter));
+	call_work_unlock(ns);
+
+	afb_req_success(request, jresp, "Bluetooth - default adapter");
 }
 
 static void connect_service_callback(void *user_data,
@@ -1206,6 +1236,11 @@ static const struct afb_verb_v3 bluetooth_verbs[] = {
 		.session = AFB_SESSION_NONE,
 		.callback = bluetooth_adapter,
 		.info = "Set adapter mode and retrieve properties"
+	}, {
+		.verb = "default_adapter",
+		.session = AFB_SESSION_NONE,
+		.callback = bluetooth_default_adapter,
+		.info = "Set default adapter for commands"
 	}, {
 		.verb = "connect",
 		.session = AFB_SESSION_NONE,
