@@ -65,6 +65,25 @@ static void mediaplayer1_set_path(struct bluetooth_state *ns, const char *path)
 	ns->mediaplayer_path = g_strdup(path);
 }
 
+static void mediaplayer1_connect_disconnect(struct bluetooth_state *ns,
+				            const gchar *player, int state)
+{
+	GVariant *reply;
+	gchar *path = g_strdup(player);
+	const char *uuids[] = { "0000110a-0000-1000-8000-00805f9b34fb", "0000110e-0000-1000-8000-00805f9b34fb", NULL };
+	const char **tmp = (const char **) uuids;
+
+	*g_strrstr(path, "/") = '\0';
+
+	for (; *tmp; tmp++) {
+		reply = bluez_call(ns, "device", path, state ? "ConnectProfile" : "DisconnectProfile", g_variant_new("(&s)", *tmp), NULL);
+		if (!reply)
+			break;
+	}
+
+	g_free(path);
+}
+
 struct call_work *call_work_lookup_unlocked(
 		struct bluetooth_state *ns,
 		const char *access_type, const char *type_arg,
@@ -328,7 +347,7 @@ static void bluez_devices_signal_callback(
 		if (is_mediaplayer1_interface(path)) {
 			json_object_object_add(jresp, "connected",
 				json_object_new_boolean(FALSE));
-			mediaplayer1_set_path(ns, NULL);
+			//mediaplayer1_set_path(ns, NULL);
 			event = ns->media_event;
 		} else if (split_length(path) == 5) {
 			json_object_object_add(jresp, "action",
@@ -1136,6 +1155,11 @@ static void bluetooth_avrcp_controls(afb_req_t request)
 		return;
 	}
 
+	if (!g_strcmp0(action, "connect") || !g_strcmp0(action, "disconnect")) {
+		mediaplayer1_connect_disconnect(ns, player, !!g_strcmp0(action, "disconnect"));
+		goto out_success;
+	}
+
 	reply = mediaplayer_call(ns, player, action, NULL, &error);
 
 	if (!reply) {
@@ -1147,6 +1171,7 @@ static void bluetooth_avrcp_controls(afb_req_t request)
 		return;
 	}
 
+out_success:
 	g_free(player);
 	afb_req_success(request, NULL, "Bluetooth - AVRCP controls");
 }
