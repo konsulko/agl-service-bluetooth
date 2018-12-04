@@ -34,6 +34,7 @@
 #define BLUEZ_AGENTMANAGER_INTERFACE		BLUEZ_SERVICE ".AgentManager1"
 #define BLUEZ_DEVICE_INTERFACE			BLUEZ_SERVICE ".Device1"
 #define BLUEZ_MEDIAPLAYER_INTERFACE		BLUEZ_SERVICE ".MediaPlayer1"
+#define BLUEZ_MEDIATRANSPORT_INTERFACE		BLUEZ_SERVICE ".MediaTransport1"
 
 #define BLUEZ_OBJECT_PATH			"/"
 #define BLUEZ_PATH				"/org/bluez"
@@ -68,6 +69,7 @@
 #define BLUEZ_AT_AGENT				"agent"
 #define BLUEZ_AT_AGENTMANAGER			"agent-manager"
 #define BLUEZ_AT_MEDIAPLAYER			"mediaplayer"
+#define BLUEZ_AT_MEDIATRANSPORT			"mediatransport"
 
 #define BLUEZ_DEFAULT_ADAPTER			"hci0"
 #define BLUEZ_DEFAULT_PLAYER			"player0"
@@ -117,6 +119,22 @@ static inline gboolean is_mediaplayer1_interface(const char *path)
 	// TODO: allow mutiple players per device
 	data = find_index(path, 5);
 	ret = !g_strcmp0(data, BLUEZ_DEFAULT_PLAYER);
+	g_free(data);
+
+	return ret;
+}
+
+static inline gboolean is_mediatransport1_interface(const char *path)
+{
+	gchar *data = NULL;
+	gboolean ret;
+
+	// Don't trigger on NowPlaying, Item, etc paths
+	if (split_length(path) != 6)
+		return FALSE;
+
+	data = find_index(path, 5);
+	ret = g_str_has_prefix(data, "fd");
 	g_free(data);
 
 	return ret;
@@ -192,6 +210,14 @@ static inline gboolean mediaplayer_property_dbus2json(json_object *jprop,
 			jprop, key, var, is_config, error);
 }
 
+static inline gboolean mediatransport_property_dbus2json(json_object *jprop,
+		const gchar *key, GVariant *var, gboolean *is_config,
+		GError **error)
+{
+	return bluez_property_dbus2json(BLUEZ_AT_MEDIATRANSPORT,
+			jprop, key, var, is_config, error);
+}
+
 static inline GVariant *device_call(struct bluetooth_state *ns,
 		const char *device, const char *method,
 		GVariant *params, GError **error)
@@ -250,6 +276,13 @@ static inline json_object *mediaplayer_properties(struct bluetooth_state *ns,
 {
 	return bluez_get_properties(ns,
 			BLUEZ_AT_MEDIAPLAYER, player, error);
+}
+
+static inline json_object *mediatransport_properties(struct bluetooth_state *ns,
+		GError **error, const gchar *player)
+{
+	return bluez_get_properties(ns,
+			BLUEZ_AT_MEDIATRANSPORT, player, error);
 }
 
 static inline json_object *object_properties(struct bluetooth_state *ns,

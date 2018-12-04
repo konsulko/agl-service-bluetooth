@@ -221,6 +221,7 @@ Playing audio reporting event (not all fields will be passed in every event):
 {
         "adapter": "hci0",
         "device": "dev_D0_81_7A_5A_BC_5E",
+        "type": "playback",
         "track": {
                 "title": "True Colors",
                 "duration": 228000,
@@ -236,6 +237,30 @@ Playing audio reporting event (not all fields will be passed in every event):
 }
 </pre>
 
+A2DP transport addition/removal (some fields are optional):
+
+<pre>
+{
+        "adapter": "hci0",
+        "device": "dev_D0_81_7A_5A_BC_5E",
+        "action": "added",
+        "type": "transport",
+        "endpoint": "fd0"
+        "properties": {
+                "uuid": "0000110B-0000-1000-8000-00805F9B34FB",
+                "state": "idle",
+                "volume": 127
+         },
+}
+...
+{
+        "adapter": "hci0",
+        "device": "dev_D0_81_7A_5A_BC_5E",
+        "action": "removed",
+        "type": "transport",
+        "endpoint": "fd0"
+}
+</pre>
 
 ### agent event
 

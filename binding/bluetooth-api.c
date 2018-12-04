@@ -300,18 +300,23 @@ static void bluez_devices_signal_callback(
 			const char *name = NULL;
 			GVariant *val = NULL;
 
-			if (g_strcmp0(key, BLUEZ_DEVICE_INTERFACE) != 0)
+			if (g_strcmp0(key, BLUEZ_DEVICE_INTERFACE) &&
+			    g_strcmp0(key, BLUEZ_MEDIATRANSPORT_INTERFACE))
 				continue;
 
 			array1 = g_variant_iter_new(var);
 
 			while (g_variant_iter_next(array1, "{&sv}", &name, &val)) {
-				ret = device_property_dbus2json(jobj,
-					name, val, &is_config, &error);
+				if (!g_strcmp0(key, BLUEZ_DEVICE_INTERFACE))
+					ret = device_property_dbus2json(jobj,
+						name, val, &is_config, &error);
+				else
+					ret = mediatransport_property_dbus2json(jobj,
+						name, val, &is_config, &error);
 				g_variant_unref(val);
 				if (!ret) {
-					AFB_WARNING("%s property %s - %s",
-							"devices",
+					AFB_DEBUG("%s property %s - %s",
+							path,
 							key, error->message);
 					g_clear_error(&error);
 				}
@@ -323,12 +328,25 @@ static void bluez_devices_signal_callback(
 		if (array1) {
 			json_object_object_add(jresp, "action",
 				json_object_new_string("added"));
+
+			if (is_mediatransport1_interface(path)) {
+				gchar *endpoint = find_index(path, 5);
+				json_object_object_add(jresp, "type",
+					json_object_new_string("transport"));
+				json_object_object_add(jresp, "endpoint",
+					json_object_new_string(endpoint));
+				g_free(endpoint);
+
+				event = ns->media_event;
+			}
 			json_object_object_add(jresp, "properties", jobj);
 		} else if (is_mediaplayer1_interface(path) &&
 				g_str_has_suffix(path, BLUEZ_DEFAULT_PLAYER)) {
 
 			json_object_object_add(jresp, "connected",
 				json_object_new_boolean(TRUE));
+			json_object_object_add(jresp, "type",
+				json_object_new_string("playback"));
 			mediaplayer1_set_path(ns, path);
 			event = ns->media_event;
 		} else {
@@ -344,10 +362,22 @@ static void bluez_devices_signal_callback(
 		jresp = json_object_new_object();
 		json_process_path(jresp, path);
 
-		if (is_mediaplayer1_interface(path)) {
+		if (is_mediatransport1_interface(path)) {
+			gchar *endpoint = find_index(path, 5);
+			json_object_object_add(jresp, "type",
+				json_object_new_string("transport"));
+			json_object_object_add(jresp, "action",
+				json_object_new_string("removed"));
+			json_object_object_add(jresp, "endpoint",
+				json_object_new_string(endpoint));
+			g_free(endpoint);
+
+			event = ns->media_event;
+		} else if (is_mediaplayer1_interface(path)) {
 			json_object_object_add(jresp, "connected",
 				json_object_new_boolean(FALSE));
-			//mediaplayer1_set_path(ns, NULL);
+			json_object_object_add(jresp, "type",
+				json_object_new_string("playback"));
 			event = ns->media_event;
 		} else if (split_length(path) == 5) {
 			json_object_object_add(jresp, "action",
@@ -377,7 +407,7 @@ static void bluez_devices_signal_callback(
 						key, var, &is_config, &error);
 				g_variant_unref(var);
 				if (!ret) {
-					AFB_WARNING("%s property %s - %s",
+					AFB_DEBUG("%s property %s - %s",
 							"devices",
 							key, error->message);
 					g_clear_error(&error);
@@ -395,23 +425,42 @@ static void bluez_devices_signal_callback(
 				jresp = NULL;
 			}
 
-		} else if (!g_strcmp0(path, BLUEZ_MEDIAPLAYER_INTERFACE)) {
+		} else if (!g_strcmp0(path, BLUEZ_MEDIAPLAYER_INTERFACE) ||
+			   !g_strcmp0(path, BLUEZ_MEDIATRANSPORT_INTERFACE)) {
 			int cnt = 0;
 			jresp = json_object_new_object();
 			json_process_path(jresp, object_path);
 
 			while (g_variant_iter_next(array, "{&sv}", &key, &var)) {
-				ret = mediaplayer_property_dbus2json(jresp,
+				if (!g_strcmp0(path, BLUEZ_MEDIAPLAYER_INTERFACE))
+					ret = mediaplayer_property_dbus2json(jresp,
+						key, var, &is_config, &error);
+				else
+					ret = mediatransport_property_dbus2json(jresp,
 						key, var, &is_config, &error);
 				g_variant_unref(var);
 				if (!ret) {
-					//AFB_WARNING("%s property %s - %s",
-					//		"mediaplayer",
-					//		key, error->message);
+					AFB_DEBUG("%s property %s - %s",
+							path,
+							key, error->message);
 					g_clear_error(&error);
 					continue;
 				}
 				cnt++;
+			}
+
+			if (!g_strcmp0(path, BLUEZ_MEDIAPLAYER_INTERFACE)) {
+				json_object_object_add(jresp, "type",
+					json_object_new_string("playback"));
+			} else {
+				gchar *endpoint = find_index(object_path, 5);
+				json_object_object_add(jresp, "action",
+					json_object_new_string("changed"));
+				json_object_object_add(jresp, "type",
+					json_object_new_string("transport"));
+				json_object_object_add(jresp, "endpoint",
+					json_object_new_string(endpoint));
+				g_free(endpoint);
 			}
 
 			// NOTE: Possible to get a changed property for something we don't care about

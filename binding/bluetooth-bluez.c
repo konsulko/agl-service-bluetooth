@@ -68,7 +68,6 @@ static const struct property_info device_props[] = {
 	{ .name = "Connected",		.fmt = "b", },
 	{ .name = "UUIDs",		.fmt = "as", },
 	{ .name = "Adapter",		.fmt = "s", },
-	{ .name = "ServicesResolved",	.fmt = "b", },
 	{ },
 };
 
@@ -92,6 +91,14 @@ static const struct property_info mediaplayer_props[] = {
 	{ },
 };
 
+static const struct property_info mediatransport_props[] = {
+	{ .name = "UUID",	.fmt = "s", },
+	{ .name = "State",	.fmt = "s", },
+	{ .name = "Delay",	.fmt = "q", },
+	{ .name = "Volume",	.fmt = "q", },
+	{ },
+};
+
 const struct property_info *bluez_get_property_info(
 		const char *access_type, GError **error)
 {
@@ -103,6 +110,8 @@ const struct property_info *bluez_get_property_info(
 		pi = device_props;
 	else if (!strcmp(access_type, BLUEZ_AT_MEDIAPLAYER))
 		pi = mediaplayer_props;
+	else if (!strcmp(access_type, BLUEZ_AT_MEDIATRANSPORT))
+		pi = mediatransport_props;
 	else
 		g_set_error(error, NB_ERROR, NB_ERROR_ILLEGAL_ARGUMENT,
 				"illegal %s argument", access_type);
@@ -347,6 +356,7 @@ json_object *bluez_get_properties(struct bluetooth_state *ns,
 
 	if (!strcmp(access_type, BLUEZ_AT_DEVICE) ||
 	    !strcmp(access_type, BLUEZ_AT_MEDIAPLAYER) ||
+	    !strcmp(access_type, BLUEZ_AT_MEDIATRANSPORT) ||
 	    !strcmp(access_type, BLUEZ_AT_ADAPTER)) {
 
 		pi = bluez_get_property_info(access_type, error);
@@ -366,6 +376,8 @@ json_object *bluez_get_properties(struct bluetooth_state *ns,
 		interface2 = BLUEZ_DEVICE_INTERFACE;
 	else if (!strcmp(access_type, BLUEZ_AT_MEDIAPLAYER))
 		interface2 = BLUEZ_MEDIAPLAYER_INTERFACE;
+	else if (!strcmp(access_type, BLUEZ_AT_MEDIATRANSPORT))
+		interface2 = BLUEZ_MEDIATRANSPORT_INTERFACE;
 	else if (!strcmp(access_type, BLUEZ_AT_ADAPTER))
 		interface2 = BLUEZ_ADAPTER_INTERFACE;
 	else if (!strcmp(access_type, BLUEZ_AT_OBJECT))
@@ -391,6 +403,7 @@ json_object *bluez_get_properties(struct bluetooth_state *ns,
 
 	if (!strcmp(access_type, BLUEZ_AT_DEVICE) ||
 	    !strcmp(access_type, BLUEZ_AT_MEDIAPLAYER) ||
+	    !strcmp(access_type, BLUEZ_AT_MEDIATRANSPORT) ||
 	    !strcmp(access_type, BLUEZ_AT_ADAPTER)) {
 		jprop = json_object_new_object();
 		g_variant_get(reply, "(a{sv})", &array);
