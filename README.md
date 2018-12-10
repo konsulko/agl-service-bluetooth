@@ -110,7 +110,20 @@ This verb allows an client to get initial paired devices, and discovered unpaire
           "servicesresolved": false
         }
       },
-...
+    ],
+    "transports": [
+      {
+          "endpoint": "fd1",
+          "adapter": "hci0",
+          "device": "dev_D0_81_7A_5A_BC_5E",
+          "properties": {
+            "uuid": "0000110B-0000-1000-8000-00805F9B34FB",
+            "state": "idle",
+            "volume": 127
+          }
+      }
+   ],
+}
 </pre>
 
 

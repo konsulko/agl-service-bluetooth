@@ -350,7 +350,7 @@ json_object *bluez_get_properties(struct bluetooth_state *ns,
 	GVariant *var = NULL;
 	const char *interface, *interface2, *path2 = NULL;
 	const gchar *key = NULL;
-	json_object *jarray = NULL, *jarray2 = NULL;
+	json_object *jarray = NULL, *jarray2 = NULL, *jarray3 = NULL;
 	json_object *jprop = NULL, *jresp = NULL, *jtype = NULL;
 	gboolean is_config;
 
@@ -415,13 +415,14 @@ json_object *bluez_get_properties(struct bluetooth_state *ns,
 		g_variant_unref(reply);
 		jresp = jprop;
 	} else if (!strcmp(access_type, BLUEZ_AT_OBJECT)) {
-		
 		jarray = json_object_new_array();
 		jarray2 = json_object_new_array();
+		jarray3 = json_object_new_array();
 
 		jresp = json_object_new_object();
 		json_object_object_add(jresp, "adapters", jarray);
 		json_object_object_add(jresp, "devices", jarray2);
+		json_object_object_add(jresp, "transports", jarray3);
 
 		g_variant_get(reply, "(a{oa{sa{sv}}})", &array);
 		while (g_variant_iter_loop(array, "{oa{sa{sv}}}", &path2, &array2)) {
@@ -442,6 +443,17 @@ json_object *bluez_get_properties(struct bluetooth_state *ns,
 				} else if (!strcmp(interface, BLUEZ_DEVICE_INTERFACE)) {
 					access_type = BLUEZ_AT_DEVICE;
 					array = jarray2;
+
+					json_process_path(jtype, path2);
+				} else if (!strcmp(interface, BLUEZ_MEDIATRANSPORT_INTERFACE)) {
+					gchar *endpoint = find_index(path2, 5);
+
+					access_type = BLUEZ_AT_MEDIATRANSPORT;
+					array = jarray3;
+
+					json_object_object_add(jtype, "endpoint",
+						json_object_new_string(endpoint));
+					g_free(endpoint);
 
 					json_process_path(jtype, path2);
 			 	} else {
