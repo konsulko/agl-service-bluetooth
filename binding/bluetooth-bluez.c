@@ -241,8 +241,8 @@ GVariant *bluez_call(struct bluetooth_state *ns,
 			NULL, error);
 	bluez_decode_call_error(ns, access_type, path, method,
 			error);
-	if (!reply) {
-		if (error && *error)
+	if (!reply && error) {
+		if (*error)
 			g_dbus_error_strip_remote_error(*error);
 		AFB_ERROR("Error calling %s%s%s %s method %s",
 				access_type,
