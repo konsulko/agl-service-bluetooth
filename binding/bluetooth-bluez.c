@@ -623,9 +623,11 @@ gboolean bluetooth_autoconnect(gpointer data)
 				reply = bluez_call(ns, "device", path, "Connect", NULL, NULL);
 				g_free(path);
 
-				if (reply)
-					return FALSE;
+				if (!reply)
+					continue;
 				g_variant_unref(reply);
+
+				return FALSE;
 			}
 		}
 	}
