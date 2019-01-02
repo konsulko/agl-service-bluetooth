@@ -129,7 +129,7 @@ This verb allows an client to get initial paired devices, and discovered unpaire
 
 ### adapter_state verb
 
-adapter_state verb allows setting and retrieving of requested adapter settings:
+#### adapter_state verb allows setting and retrieving of requested adapter settings
 
 | Name            | Description                                                            |
 |-----------------|------------------------------------------------------------------------|
@@ -137,7 +137,13 @@ adapter_state verb allows setting and retrieving of requested adapter settings:
 | discovery       | Discover nearby broadcasting devices                                   |
 | discoverable    | Allow other devices to detect this device                              |
 | powered         | Adapter power state (optional, rfkill should be disabled already)      |
-| filter          | Display devices only with respective UUIDS listed (write only setting) |
+
+#### adapter_state verb write-only parameters
+
+| Name            | Description                                                              |
+|-----------------|--------------------------------------------------------------------------|
+| filter          | Scan for devices only with respective UUIDS listed                       |
+| transport       | Scan for devices with only defined transport type (e.g. auto, bredr, le) |
 
 #### avrcp_controls verb
 
