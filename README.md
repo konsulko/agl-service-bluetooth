@@ -145,7 +145,7 @@ This verb allows an client to get initial paired devices, and discovered unpaire
 | filter          | Scan for devices only with respective UUIDS listed                       |
 | transport       | Scan for devices with only defined transport type (e.g. auto, bredr, le) |
 
-#### avrcp_controls verb
+### avrcp_controls verb
 
 avrcp_controls verb allow controlling the playback of the defined device
 
