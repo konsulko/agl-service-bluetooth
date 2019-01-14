@@ -20,6 +20,7 @@
 
 	<feature name="urn:AGL:widget:required-api">
 		<param name="persistence" value="ws" />
+		<param name="network-manager" value="ws" />
 		<param name="@WIDGET_ENTRY_POINT@" value="local" />
 	</feature>
 </widget>

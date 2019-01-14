@@ -544,8 +544,6 @@ static struct bluetooth_state *bluetooth_init(GMainLoop *loop)
 	g_mutex_init(&ns->cw_mutex);
 	ns->next_cw_id = 1;
 
-	bluetooth_monitor_init();
-
 	g_timeout_add_seconds(5, bluetooth_autoconnect, ns);
 
 	return ns;
@@ -623,6 +621,7 @@ err_no_loop:
 static int init(afb_api_t api)
 {
 	struct init_data init_data, *id = &init_data;
+	json_object *args = NULL;
 	gint64 end_time;
 	int ret;
 
@@ -638,6 +637,16 @@ static int init(afb_api_t api)
 		AFB_ERROR("Cannot request data persistence service");
 		return ret;
 	}
+
+	ret = afb_daemon_require_api("network-manager", 1);
+	if (ret < 0) {
+		AFB_ERROR("Cannot request network manager service");
+		return ret;
+	}
+
+	args = json_object_new_object();
+	json_object_object_add(args , "technology", json_object_new_string("bluetooth"));
+	afb_api_call_sync(api, "network-manager", "enable_technology", args, NULL, NULL, NULL);
 
 	global_thread = g_thread_new("agl-service-bluetooth",
 				bluetooth_func,

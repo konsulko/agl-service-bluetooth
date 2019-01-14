@@ -21,7 +21,7 @@
 PROJECT_TARGET_ADD(afm-bluetooth-binding)
 
 	# Define project Targets
-	add_library(afm-bluetooth-binding MODULE bluetooth-api.c bluetooth-agent.c bluetooth-conf.c bluetooth-rfkill.c bluetooth-util.c bluetooth-bluez.c)
+	add_library(afm-bluetooth-binding MODULE bluetooth-api.c bluetooth-agent.c bluetooth-conf.c bluetooth-util.c bluetooth-bluez.c)
 
 	# Binder exposes a unique public entry point
 	SET_TARGET_PROPERTIES(${TARGET_NAME} PROPERTIES
