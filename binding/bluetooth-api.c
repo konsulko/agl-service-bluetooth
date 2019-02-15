@@ -290,6 +290,10 @@ static void bluez_devices_signal_callback(
 
 		g_variant_get(parameters, "(&oa{sa{sv}})", &path, &array);
 
+		// no adapter or device in path
+		if (!g_strcmp0(path, BLUEZ_PATH))
+			return;
+
 		jresp = json_object_new_object();
 
                 json_process_path(jresp, path);
