@@ -194,6 +194,14 @@ static inline gboolean device_property_dbus2json(json_object *jprop,
 			jprop, key, var, is_config, error);
 }
 
+static inline gboolean adapter_property_dbus2json(json_object *jprop,
+		const gchar *key, GVariant *var, gboolean *is_config,
+		GError **error)
+{
+	return bluez_property_dbus2json(BLUEZ_AT_ADAPTER,
+			jprop, key, var, is_config, error);
+}
+
 static inline gboolean agent_property_dbus2json(json_object *jprop,
 		const gchar *key, GVariant *var, gboolean *is_config,
 		GError **error)

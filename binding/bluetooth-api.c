@@ -249,6 +249,9 @@ void call_work_destroy(struct call_work *cw)
 static afb_event_t get_event_from_value(struct bluetooth_state *ns,
 			const char *value)
 {
+	if (!g_strcmp0(value, "adapter_changes"))
+		return ns->adapter_changes_event;
+
 	if (!g_strcmp0(value, "device_changes"))
 		return ns->device_changes_event;
 
@@ -305,18 +308,27 @@ static void bluez_devices_signal_callback(
 			GVariant *val = NULL;
 
 			if (g_strcmp0(key, BLUEZ_DEVICE_INTERFACE) &&
-			    g_strcmp0(key, BLUEZ_MEDIATRANSPORT_INTERFACE))
+			    g_strcmp0(key, BLUEZ_MEDIATRANSPORT_INTERFACE) &&
+			    g_strcmp0(key, BLUEZ_ADAPTER_INTERFACE))
 				continue;
 
 			array1 = g_variant_iter_new(var);
 
 			while (g_variant_iter_next(array1, "{&sv}", &name, &val)) {
-				if (!g_strcmp0(key, BLUEZ_DEVICE_INTERFACE))
+				if (!g_strcmp0(key, BLUEZ_DEVICE_INTERFACE)) {
 					ret = device_property_dbus2json(jobj,
 						name, val, &is_config, &error);
-				else
+				} else if (!g_strcmp0(key, BLUEZ_MEDIATRANSPORT_INTERFACE)) {
 					ret = mediatransport_property_dbus2json(jobj,
 						name, val, &is_config, &error);
+				} else if (!g_strcmp0(key, BLUEZ_ADAPTER_INTERFACE)) {
+					ret = adapter_property_dbus2json(jobj,
+						name, val, &is_config, &error);
+					event = ns->adapter_changes_event;
+				} else {
+					ret = TRUE;
+				}
+
 				g_variant_unref(val);
 				if (!ret) {
 					AFB_DEBUG("%s property %s - %s",
@@ -383,6 +395,12 @@ static void bluez_devices_signal_callback(
 			json_object_object_add(jresp, "type",
 				json_object_new_string("playback"));
 			event = ns->media_event;
+		/* adapter removal */
+		} else if (split_length(path) == 4) {
+			json_object_object_add(jresp, "action",
+				json_object_new_string("removed"));
+			event = ns->adapter_changes_event;
+		/* device removal */
 		} else if (split_length(path) == 5) {
 			json_object_object_add(jresp, "action",
 				json_object_new_string("removed"));
@@ -515,6 +533,8 @@ static struct bluetooth_state *bluetooth_init(GMainLoop *loop)
 
 	AFB_INFO("connected to dbus");
 
+	ns->adapter_changes_event =
+		afb_daemon_make_event("adapter_changes");
 	ns->device_changes_event =
 		afb_daemon_make_event("device_changes");
 	ns->media_event =

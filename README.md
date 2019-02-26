@@ -175,10 +175,48 @@ To do the same for the respective device, verb, and for singular profile
 
 | Name              | Description                              | JSON Event Data                           |
 |-------------------|------------------------------------------|-------------------------------------------|
-| device_changes    | report on bluetooth devices              | see device_changes event section          |
+| adapter_changes   | report on Bluetooth adapter states       | see adapter_changes event section         |
+| device_changes    | report on Bluetooth devices              | see device_changes event section          |
 | media             | report on MediaPlayer1 events            | see media event section                   |
 | agent             | PIN from BlueZ agent for confirmation    | see agent event section                   |
 
+
+### adapter_changes event
+
+Sample of adding new adapter event:
+
+<pre>
+{
+  "adapter": "hci0",
+  "action": "added",
+  "properties": {
+    "address": "60:30:D4:66:55:A7",
+    "powered": false,
+    "discoverable": false,
+    "discoverabletimeout": 180,
+    "pairable": true,
+    "pairabletimeout": 0,
+    "discovering": false,
+    "uuids": [
+      "00001801-0000-1000-8000-00805f9b34fb",
+      "0000110e-0000-1000-8000-00805f9b34fb",
+      "00001200-0000-1000-8000-00805f9b34fb",
+      "00001800-0000-1000-8000-00805f9b34fb",
+      "0000111e-0000-1000-8000-00805f9b34fb",
+      "0000110c-0000-1000-8000-00805f9b34fb"
+    ]
+  }
+}
+</pre>
+
+Sample of adapter being remove:
+
+<pre>
+{
+  "adapter": "hci0",
+  "action": "removed",
+}
+</pre>
 
 ### device_changes event
 

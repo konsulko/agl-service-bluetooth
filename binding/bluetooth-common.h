@@ -40,6 +40,7 @@ struct bluetooth_state {
 	guint device_sub;
 	guint autoconnect_sub;
 
+	afb_event_t adapter_changes_event;
 	afb_event_t device_changes_event;
 	afb_event_t media_event;
 	afb_event_t agent_event;
