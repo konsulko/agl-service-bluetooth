@@ -356,13 +356,14 @@ static void bluez_devices_signal_callback(
 				event = ns->media_event;
 			}
 			json_object_object_add(jresp, "properties", jobj);
-		} else if (is_mediaplayer1_interface(path) &&
-				g_str_has_suffix(path, BLUEZ_DEFAULT_PLAYER)) {
-
+		} else if (is_mediaplayer1_interface(path)) {
+			gchar *player = find_index(path, 5);
 			json_object_object_add(jresp, "connected",
 				json_object_new_boolean(TRUE));
 			json_object_object_add(jresp, "type",
 				json_object_new_string("playback"));
+			json_object_object_add(jresp, "player",
+				json_object_new_string(player));
 			mediaplayer1_set_path(ns, path);
 			event = ns->media_event;
 		} else {
@@ -390,10 +391,13 @@ static void bluez_devices_signal_callback(
 
 			event = ns->media_event;
 		} else if (is_mediaplayer1_interface(path)) {
+			gchar *player = find_index(path, 5);
 			json_object_object_add(jresp, "connected",
 				json_object_new_boolean(FALSE));
 			json_object_object_add(jresp, "type",
 				json_object_new_string("playback"));
+			json_object_object_add(jresp, "player",
+				json_object_new_string(player));
 			event = ns->media_event;
 		/* adapter removal */
 		} else if (split_length(path) == 4) {

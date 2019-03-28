@@ -303,8 +303,9 @@ Playing audio reporting event (not all fields will be passed in every event):
                 "genre": "Dance & DJ/General"
         },
         "position": 5600,
-        "status": "playing"
-        "connected": false
+        "status": "playing",
+        "connected": true,
+        "player": "player0"
 }
 </pre>
 

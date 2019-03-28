@@ -116,9 +116,9 @@ static inline gboolean is_mediaplayer1_interface(const char *path)
 	if (split_length(path) != 6)
 		return FALSE;
 
-	// TODO: allow mutiple players per device
+	// Check for 'playerX' suffix, not always player0
 	data = find_index(path, 5);
-	ret = !g_strcmp0(data, BLUEZ_DEFAULT_PLAYER);
+	ret = !strncmp(data, BLUEZ_DEFAULT_PLAYER, sizeof(BLUEZ_DEFAULT_PLAYER) - 1);
 	g_free(data);
 
 	return ret;
