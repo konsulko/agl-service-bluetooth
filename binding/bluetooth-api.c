@@ -413,7 +413,8 @@ static void bluez_devices_signal_callback(
 
 		g_variant_get(parameters, "(&sa{sv}as)", &path, &array, &array1);
 
-		if (!g_strcmp0(path, BLUEZ_DEVICE_INTERFACE)) {
+		if (!g_strcmp0(path, BLUEZ_DEVICE_INTERFACE) ||
+		    !g_strcmp0(path, BLUEZ_ADAPTER_INTERFACE)) {
 			int cnt = 0;
 
 			jresp = json_object_new_object();
@@ -425,8 +426,15 @@ static void bluez_devices_signal_callback(
 			jobj = json_object_new_object();
 
 			while (g_variant_iter_next(array, "{&sv}", &key, &var)) {
-				ret = device_property_dbus2json(jobj,
+				if (!g_strcmp0(path, BLUEZ_DEVICE_INTERFACE)) {
+					ret = device_property_dbus2json(jobj,
 						key, var, &is_config, &error);
+					event = ns->device_changes_event;
+				} else {
+					ret = adapter_property_dbus2json(jobj,
+						key, var, &is_config, &error);
+					event = ns->adapter_changes_event;
+				}
 				g_variant_unref(var);
 				if (!ret) {
 					AFB_DEBUG("%s property %s - %s",
@@ -848,7 +856,6 @@ static void bluetooth_adapter(afb_req_t request)
 		int ret = adapter_set_property(ns, adapter, FALSE, "Powered",
 				json_object_new_boolean(str2boolean(powered)),
 				&error);
-		json_object *jresp = NULL;
 
 		if (!ret) {
 			afb_req_fail_f(request, "failed",
@@ -857,16 +864,6 @@ static void bluetooth_adapter(afb_req_t request)
 			g_error_free(error);
 			return;
 		}
-
-		jresp = json_object_new_object();
-
-		json_process_path(jresp, adapter);
-		json_object_object_add(jresp, "action",
-				json_object_new_string("changed"));
-		json_object_object_add(jresp, "powered",
-				json_object_new_boolean(str2boolean(powered)));
-
-		afb_event_push(ns->device_changes_event, jresp);
 	}
 
 	filter = afb_req_value(request, "filter");

@@ -209,7 +209,21 @@ Sample of adding new adapter event:
 }
 </pre>
 
-Sample of adapter being remove:
+Sample of adapter property changes:
+
+<pre>
+{
+  "adapter": "hci0",
+  "action": "changed",
+  "properties": {
+    "powered": false,
+    "discovering": false,
+    "discoverable": false
+  }
+}
+</pre>
+
+Sample of adapter being removed:
 
 <pre>
 {
