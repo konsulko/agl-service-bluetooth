@@ -18,7 +18,7 @@
 
 
 
--- Default Adapter test
+-- Version Verb test
 _AFT.testVerbStatusSuccess('testBtVersionSuccess','Bluetooth-Manager','version', {})
 
 -- Default Adapter test
@@ -42,3 +42,11 @@ _AFT.testVerbStatusSuccess('testBtManagedObjsSuccess','Bluetooth-Manager','manag
 -- Adapter state test
 _AFT.testVerbStatusSuccess('testBtAdpStateSuccess','Bluetooth-Manager','adapter_state', {})
 
+-- Pair test - requires valid bluetooth adapter 
+-- _AFT.testVerbStatusSuccess('testBtPairSuccess','Bluetooth-Manager','pair', {device="dev_01_23_45_67_89_0A"})
+
+-- Cancel pairing test - cancel an ongoing pairing
+-- _AFT.testVerbStatusSuccess('testBtCancelPairSuccess', 'Bluetooth-Manager', 'cancel_pairing', {})
+
+-- Connect to a paired device
+-- _AFT.testVerbStatusSuccess('testBtConnectSuccess', 'Bluetooth-Manager', 'connect', {device="dev_01_23_45_67_89_0A"})
